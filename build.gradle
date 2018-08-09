@@ -1,0 +1,79 @@
+buildscript {
+  apply from: "dependencies.gradle"
+
+  repositories {
+    jcenter()
+    google()
+    maven {
+      url "https://plugins.gradle.org/m2/"
+    }
+  }
+  dependencies {
+    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
+    classpath "org.jacoco:org.jacoco.core:$jacocoVersion"
+  }
+}
+
+repositories {
+  jcenter()
+  maven {
+    url "https://maven.google.com"
+  }
+  maven {
+    url 'http://trinerdis.cz:8000/repository/snapshots/'
+    credentials {
+      username 'development'
+      password System.getenv("DEPLOYMENT_PASSWORD")
+    }
+  }
+}
+
+apply from: "dependencies.gradle"
+
+apply plugin: 'kotlin'
+apply plugin: 'kotlin-kapt'
+apply plugin: 'jacoco'
+apply plugin: 'maven'
+
+dependencies {
+  implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlinVersion"
+  implementation "com.google.code.gson:gson:$gsonVersion"
+
+  testImplementation "org.hamcrest:java-hamcrest:$hamcrestVersion"
+  testImplementation "org.hamcrest:hamcrest-junit:$hamcrestVersion"
+}
+
+// region Code Coverage
+
+jacoco {
+  toolVersion = "$jacocoVersion"
+}
+
+tasks.withType(Test) {
+  jacoco.includeNoLocationClasses = true
+}
+
+// endregion Code Coverage
+
+// region Deployment
+
+uploadArchives {
+  repositories {
+    mavenDeployer {
+      repository(url: "http://trinerdis.cz:8000/repository/snapshots/") {
+        authentication(userName: "deployment", password: "pwn3dbypicky")
+      }
+      pom.version = "0.2.8-SNAPSHOT"
+      pom.artifactId = "utils"
+      pom.groupId = "com.trinerdis"
+    }
+  }
+}
+
+// endregion Deployment
+
+allprojects {
+  repositories {
+    mavenCentral()
+  }
+}
