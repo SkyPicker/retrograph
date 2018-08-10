@@ -3,8 +3,13 @@ ext {
   if (!hasProperty('kotlinVersion')) kotlinVersion = "1.2.60"
 
   if (!hasProperty('gsonVersion')) gsonVersion = "2.8.2"
+  if (!hasProperty('retrofitVersion')) retrofitVersion = "2.4.0"
+  if (!hasProperty('rxJavaVersion')) rxJavaVersion = "2.2.0"
+  if (!hasProperty('okhttpVersion')) okhttpVersion = "3.10.0"
 
-  if (!hasProperty('hamcrestVersion')) hamcrestVersion = "2.0.0.0"
+  junit5Version = "5.1.0"
+  spekVersion = "1.1.5"
+  supportVersion = "27.1.1"
 
   if (!hasProperty('jacocoVersion')) jacocoVersion = "0.8.1"
 }

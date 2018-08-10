@@ -10,14 +10,28 @@ buildscript {
   }
   dependencies {
     classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion"
+    classpath 'com.netflix.nebula:gradle-lint-plugin:latest.release'
+    //classpath 'org.junit.platform:junit-platform-gradle-plugin:1.0.0'
     classpath "org.jacoco:org.jacoco.core:$jacocoVersion"
   }
 }
 
+//apply plugin: 'org.junit.platform.gradle.plugin'
+
+/*junitPlatform {
+  filters {
+    engines {
+      include 'spek'
+    }
+  }
+}*/
+
+
 repositories {
   jcenter()
+  google()
   maven {
-    url "https://maven.google.com"
+    url "http://dl.bintray.com/jetbrains/spek"
   }
   maven {
     url 'http://trinerdis.cz:8000/repository/snapshots/'
@@ -37,10 +51,23 @@ apply plugin: 'maven'
 
 dependencies {
   implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlinVersion"
+  implementation "com.squareup.retrofit2:retrofit:$retrofitVersion"
+  implementation "com.squareup.retrofit2:converter-gson:$retrofitVersion"
   implementation "com.google.code.gson:gson:$gsonVersion"
+  implementation "io.reactivex.rxjava2:rxjava:$rxJavaVersion"
 
-  testImplementation "org.hamcrest:java-hamcrest:$hamcrestVersion"
-  testImplementation "org.hamcrest:hamcrest-junit:$hamcrestVersion"
+  //testImplementation "org.junit.jupiter:junit-jupiter-api:$junit5Version"
+  //testRuntimeOnly "org.junit.jupiter:junitn-jupiter-engine:$junit5Version"
+  //testImplementation "org.jetbrains.spek:spek-api:$spekVersion"
+  //testRuntime "org.jetbrains.spek:spek-junit-platform-engine:$spekVersion"
+  testImplementation "com.squareup.okhttp3:mockwebserver:$okhttpVersion"
+
+  // TODO: Remove this.
+  implementation "com.android.support:support-annotations:$supportVersion"
+  testImplementation "junit:junit:4.12"
+  testImplementation "org.assertj:assertj-core:3.10.0"
+  testImplementation "com.google.guava:guava:22.0"
+  //#implementation(group: 'com.google.code.findbugs', name: 'jsr305', version: '3.0.2'
 }
 
 // region Code Coverage
@@ -63,17 +90,12 @@ uploadArchives {
       repository(url: "http://trinerdis.cz:8000/repository/snapshots/") {
         authentication(userName: "deployment", password: "pwn3dbypicky")
       }
-      pom.version = "0.2.8-SNAPSHOT"
-      pom.artifactId = "utils"
-      pom.groupId = "com.trinerdis"
+      pom.version = "0.1-SNAPSHOT"
+      pom.artifactId = "retrograph"
+      pom.groupId = "com.kiwi.mobile"
     }
   }
 }
 
 // endregion Deployment
 
-allprojects {
-  repositories {
-    mavenCentral()
-  }
-}

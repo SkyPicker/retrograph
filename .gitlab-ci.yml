@@ -1,0 +1,145 @@
+stages:
+  - build
+  - test
+  - quality
+  - deploy
+
+# ANDROID TEMPLATE
+
+.android_template: &android_definition
+  image: jangrewe/gitlab-ci-android
+  #image: jerbob92/gitlab-ci-android:latest
+  #image: inovex/gitlab-ci-android
+  #image: javiersantos/android-ci:latest
+
+  variables:
+    GRADLE_USER_HOME: ".gradle"
+    GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.caching=true"
+    ANDROID_SDK_HOME: ".gradle"
+    SOURCES_PATH: "src/main"
+    TESTS_PATH: "src/test"
+    BINARIES_PATH: "build/classes/"
+    JACOCO_EXEC_FILE : "build/jacoco/test.exec"
+
+  before_script:
+    - echo $GRADLE_USER_HOME
+    - echo $GRADLE_OPTS
+    - echo $ANDROID_SDK_HOME
+    - echo -e "android.enableBuildCache=true" > gradle.properties
+    - cat gradle.properties
+    - mkdir -p $GRADLE_USER_HOME
+    - rm -rf gradle.properties
+    - chmod +x ./gradlew
+    - ./gradlew --stop
+
+  cache:
+    key: ${CI_PROJECT_ID}
+    paths:
+      - $GRADLE_USER_HOME/
+
+# SONARQUBE TEMPLATE
+
+.sonarqube_template: &sonarqube_definition
+  image: openjdk:8-jre-alpine
+
+  variables:
+    SONAR_SCANNER_VERSION: "3.0.3.778"
+    SONAR_SCANNER_ARGS: >
+      -Dsonar.host.url=$SONARQUBE_URL
+      -Dsonar.login=$SONARQUBE_TOKEN
+      -Dsonar.projectKey=$CI_PROJECT_NAMESPACE:$CI_PROJECT_NAME
+      -Dsonar.projectVersion=$CI_JOB_ID
+      -Dsonar.sources=$SOURCES_PATH
+      -Dsonar.tests=$TESTS_PATH
+      -Dsonar.java.binaries=$BINARIES_PATH
+      -Dsonar.java.coveragePlugin=jacoco
+      -Dsonar.jacoco.reportPaths=$JACOCO_EXEC_FILE
+
+  before_script:
+    - apk add --no-cache ca-certificates wget git
+    - update-ca-certificates
+    - wget https://s3-eu-west-1.amazonaws.com/kiwi-ci/sonar-scanner-cli-$SONAR_SCANNER_VERSION.zip
+    - unzip sonar-scanner-cli-$SONAR_SCANNER_VERSION.zip
+
+  allow_failure: true
+
+# TASKS
+
+assemble:
+  stage: build
+
+  <<: *android_definition
+
+  script:
+    - ./gradlew --no-daemon assemble
+
+  artifacts:
+    name: "${CI_BUILD_NAME}_${CI_BUILD_REF_NAME}"
+    paths:
+      - $BINARIES_PATH
+    expire_in: 1 week
+
+test:
+  stage: test
+
+  <<: *android_definition
+
+  script:
+    - ./gradlew --no-daemon test jacocoTestReport
+
+  dependencies: [build]
+
+  cache:
+    key: ${CI_PROJECT_ID}
+    paths:
+      - $GRADLE_USER_HOME/
+    policy: pull
+
+  artifacts:
+    paths:
+      - $JACOCO_EXEC_FILE
+    expire_in: 1 week
+
+sonar-scanner:
+  stage: quality
+
+  <<: *sonarqube_definition
+
+  only:
+    - master
+
+  script:
+    - sonar-scanner-$SONAR_SCANNER_VERSION/bin/sonar-scanner $SONAR_SCANNER_ARGS
+
+  dependencies: [build, test]
+
+sonar-scanner-branch:
+  stage: quality
+
+  <<: *sonarqube_definition
+
+  except:
+    - master
+
+  script:
+    - sonar-scanner-$SONAR_SCANNER_VERSION/bin/sonar-scanner $SONAR_SCANNER_ARGS -Dsonar.branch.name=$CI_COMMIT_REF_NAME
+
+  dependencies: [build, test]
+
+uploadArchives:
+  stage: deploy
+
+  <<: *android_definition
+
+  script:
+    - ./gradlew --no-daemon uploadArchives
+
+  dependencies: [build, test]
+
+  when: manual
+
+  cache:
+    key: ${CI_PROJECT_ID}
+    paths:
+      - $GRADLE_USER_HOME/
+    policy: pull
