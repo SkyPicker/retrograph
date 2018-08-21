@@ -4,38 +4,47 @@ stages:
   - quality
   - deploy
 
-# ANDROID TEMPLATE
+variables:
+  SOURCES_PATH: "src/main/java"
+  TESTS_PATH: "src/test/java"
+  BINARIES_PATH: "build/classes"
+  JACOCO_EXEC_FILE : "build/jacoco/test.exec"
 
-.android_template: &android_definition
+.default_template: &default_definition
   image: jangrewe/gitlab-ci-android
-  #image: jerbob92/gitlab-ci-android:latest
-  #image: inovex/gitlab-ci-android
-  #image: javiersantos/android-ci:latest
 
   variables:
-    GRADLE_USER_HOME: ".gradle"
-    GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.caching=true"
-    ANDROID_SDK_HOME: ".gradle"
-    SOURCES_PATH: "src/main"
-    TESTS_PATH: "src/test"
-    BINARIES_PATH: "build/classes/"
-    JACOCO_EXEC_FILE : "build/jacoco/test.exec"
+    CACHE_DIR: "/builds/mobile/retrograph/cache"
+    GRADLE_USER_HOME: "${CACHE_DIR}/gradle"
+    GRADLE_OPTS: "-Dorg.gradle.daemon=true -Dorg.gradle.parallel=true -Dorg.gradle.caching=true"
 
   before_script:
+    - echo $CACHE_DIR
     - echo $GRADLE_USER_HOME
     - echo $GRADLE_OPTS
-    - echo $ANDROID_SDK_HOME
-    - echo -e "android.enableBuildCache=true" > gradle.properties
-    - cat gradle.properties
     - mkdir -p $GRADLE_USER_HOME
     - rm -rf gradle.properties
+    - echo -e "org.gradle.parallel=true" >> gradle.properties
+    - echo -e "org.gradle.daemon=false" >> gradle.properties
+    - echo -e "org.gradle.caching=true" >> gradle.properties
+    - echo -e "org.gradle.jvmargs=-Xms256m -Xmx4096m" >> gradle.properties
+    - cat gradle.properties
+    - rm -rf gradle.properties
     - chmod +x ./gradlew
+    - du -sh $CACHE_DIR || true
+    - du -sh $CACHE_DIR/* || true
+    - du -sh $GRADLE_USER_HOME/* || true
     - ./gradlew --stop
+
+  after_script:
+    - du -sh $CACHE_DIR || true
+    - du -sh $CACHE_DIR/* || true
+    - du -sh $GRADLE_USER_HOME/* || true
 
   cache:
     key: ${CI_PROJECT_ID}
     paths:
-      - $GRADLE_USER_HOME/
+      - $CHACHE_DIR
 
 # SONARQUBE TEMPLATE
 
@@ -68,10 +77,10 @@ stages:
 assemble:
   stage: build
 
-  <<: *android_definition
+  <<: *default_definition
 
   script:
-    - ./gradlew --no-daemon assemble
+    - ./gradlew assemble
 
   artifacts:
     name: "${CI_BUILD_NAME}_${CI_BUILD_REF_NAME}"
@@ -82,21 +91,16 @@ assemble:
 test:
   stage: test
 
-  <<: *android_definition
+  <<: *default_definition
 
   script:
-    - ./gradlew --no-daemon test jacocoTestReport
+    - ./gradlew test jacocoTestReport
 
-  dependencies: [build]
-
-  cache:
-    key: ${CI_PROJECT_ID}
-    paths:
-      - $GRADLE_USER_HOME/
-    policy: pull
+  dependencies: [assemble]
 
   artifacts:
     paths:
+      - $BINARIES_PATH
       - $JACOCO_EXEC_FILE
     expire_in: 1 week
 
@@ -111,7 +115,7 @@ sonar-scanner:
   script:
     - sonar-scanner-$SONAR_SCANNER_VERSION/bin/sonar-scanner $SONAR_SCANNER_ARGS
 
-  dependencies: [build, test]
+  dependencies: [test]
 
 sonar-scanner-branch:
   stage: quality
@@ -124,22 +128,16 @@ sonar-scanner-branch:
   script:
     - sonar-scanner-$SONAR_SCANNER_VERSION/bin/sonar-scanner $SONAR_SCANNER_ARGS -Dsonar.branch.name=$CI_COMMIT_REF_NAME
 
-  dependencies: [build, test]
+  dependencies: [test]
 
 uploadArchives:
   stage: deploy
 
-  <<: *android_definition
+  <<: *default_definition
 
   script:
-    - ./gradlew --no-daemon uploadArchives
+    - ./gradlew uploadArchives
 
-  dependencies: [build, test]
+  dependencies: [assemble, test]
 
   when: manual
-
-  cache:
-    key: ${CI_PROJECT_ID}
-    paths:
-      - $GRADLE_USER_HOME/
-    policy: pull

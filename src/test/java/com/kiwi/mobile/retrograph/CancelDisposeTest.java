@@ -10,6 +10,7 @@ import io.reactivex.disposables.*;
 import retrofit2.*;
 import retrofit2.http.*;
 
+import com.kiwi.mobile.retrograph.converter.*;
 import okhttp3.Call;
 import okhttp3.*;
 import okhttp3.mockwebserver.*;

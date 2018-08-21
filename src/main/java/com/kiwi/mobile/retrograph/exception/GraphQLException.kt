@@ -1,12 +1,12 @@
 package com.kiwi.mobile.retrograph.exception
 
-import com.kiwi.mobile.retrograph.*
+import com.kiwi.mobile.retrograph.model.*
 
-class GraphQLException(response: GraphQLResponse<*>):
+class GraphQLException(response: Response<*>):
   Exception(
-    if ((response.errors == null) || response.errors.isEmpty()) {
-      "GraphQLException: No error message."
+    if (response.errors.isEmpty()) {
+      "No error message."
     } else {
-      response.errors[0]
+      response.errors.toString()
     }
   )

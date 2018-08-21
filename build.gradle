@@ -26,7 +26,6 @@ buildscript {
   }
 }*/
 
-
 repositories {
   jcenter()
   google()
@@ -53,6 +52,8 @@ dependencies {
   implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlinVersion"
   implementation "com.squareup.retrofit2:retrofit:$retrofitVersion"
   implementation "com.squareup.retrofit2:converter-gson:$retrofitVersion"
+  implementation "com.squareup.retrofit2:adapter-rxjava2:$retrofitVersion"
+  implementation "com.squareup.okhttp3:logging-interceptor:$okhttpVersion"
   implementation "com.google.code.gson:gson:$gsonVersion"
   implementation "io.reactivex.rxjava2:rxjava:$rxJavaVersion"
 
@@ -65,9 +66,15 @@ dependencies {
   // TODO: Remove this.
   implementation "com.android.support:support-annotations:$supportVersion"
   testImplementation "junit:junit:4.12"
+  testImplementation "io.mockk:mockk:$mockkVersion"
   testImplementation "org.assertj:assertj-core:3.10.0"
   testImplementation "com.google.guava:guava:22.0"
   //#implementation(group: 'com.google.code.findbugs', name: 'jsr305', version: '3.0.2'
+}
+
+// Test tasks are never up-to-date.
+tasks.withType(Test) {
+  outputs.upToDateWhen { false }
 }
 
 // region Code Coverage

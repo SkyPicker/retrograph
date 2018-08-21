@@ -6,10 +6,13 @@ ext {
   if (!hasProperty('retrofitVersion')) retrofitVersion = "2.4.0"
   if (!hasProperty('rxJavaVersion')) rxJavaVersion = "2.2.0"
   if (!hasProperty('okhttpVersion')) okhttpVersion = "3.10.0"
+  if (!hasProperty('timberVersion')) timberVersion = "4.7.1"
 
   junit5Version = "5.1.0"
   spekVersion = "1.1.5"
   supportVersion = "27.1.1"
+
+  mockkVersion = "1.8.6"
 
   if (!hasProperty('jacocoVersion')) jacocoVersion = "0.8.1"
 }
