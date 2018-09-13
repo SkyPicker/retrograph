@@ -9,6 +9,65 @@ import org.junit.*
 
 class OperationTest {
 
+  // region Private Types
+
+  enum class Enum {
+    A, B
+  }
+
+  // TODO: Lists and arrays of enums and primitive types.
+  // TODO: template parameter fields.
+  // TODO: Kotlin reflection and properties.
+
+  @Suppress("unused")
+  class Object<T>(
+    val int: Int,
+    val long: Long,
+    val double: Double,
+    val boolean: Boolean,
+    val string: String,
+    val enum: Enum,
+    //val intList: List<Int>,
+    //val enumList: List<Enum>,
+    //val objectList: List<Item>
+    val intArray: Array<Int>,
+    //val enumArray: Array<Enum>,
+    val objectArray: Array<Item>,
+    val genericObject: Generic<T>,
+    val templateArgumentObject: T
+  )
+
+  @Suppress("unused")
+  class Item(
+    val name: String
+  )
+
+  @Suppress("unused")
+  class Generic<T>(
+    val value: T
+  )
+
+  @Suppress("unused")
+  class Foo<T>(
+    val int: Int,
+    val long: Long,
+    val double: Double,
+    val boolean: Boolean,
+    val string: String,
+    val enum: Enum,
+    //val intList: List<Int>,
+    //val enumList: List<Enum>,
+    //val objectList: List<Item>
+    val intArray: Array<Int>,
+    //val enumArray: Array<Enum>,
+    val objectArray: Array<Item>,
+    val `object`: Object<String>,
+    val genericObject: Generic<T>,
+    val templateArgumentObject: T
+  )
+
+  // endregion Private Types
+
   // region Private Properties
 
   @RelaxedMockK
@@ -117,13 +176,14 @@ class OperationTest {
   }
 
   @Test
-  fun whenFieldHasAlias_thenSerialized() {
+  fun whenFieldsOfObject_thenSerialized() {
     // given
 
     val operation = Operation(mockParent)
-      .field("a", "aa")
-      .objectField("b", "bb")
-      .finish()
+      .fieldsOf("a", Foo::class.java)
+
+    /*val operation = Operation(mockParent)
+      .fieldsOf("a", Foo::class)*/
 
     // when
 
@@ -134,7 +194,34 @@ class OperationTest {
     assertThat(operation)
       .isInstanceOf(Operation::class.java)
     assertThat(serialized)
-      .isEqualTo("query  { aa: a, bb: b }")
+      .isEqualTo(
+        "query  { a { int, long, double, boolean, string, enum, intArray, objectArray { name },"
+          + " object { int, long, double, boolean, string, enum, intArray, objectArray { name },"
+          + " genericObject { value }, templateArgumentObject }, genericObject { value },"
+          + " templateArgumentObject } }"
+      )
+  }
+
+  @Test
+  fun whenFieldsHaveAlias_thenSerialized() {
+    // given
+
+    val operation = Operation(mockParent)
+      .field("a", "aa")
+      .objectField("b", "bb")
+      .finish()
+      .field("c")
+
+    // when
+
+    val serialized = operation.toString()
+
+    // then
+
+    assertThat(operation)
+      .isInstanceOf(Operation::class.java)
+    assertThat(serialized)
+      .isEqualTo("query  { aa: a, bb: b, c }")
   }
 
   @Test

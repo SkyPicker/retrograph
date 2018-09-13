@@ -65,15 +65,11 @@ class GraphQLRetrofitResponseObservable<T>(
 
     private fun sendResponse(response: RetrofitResponse<GraphQLResponse<R>>) {
       val body = response.body()
-      when (body) {
-        null -> {
+      when {
+        body?.data == null ->
           observer.onNext(RetrofitResponse.error(response.errorBody()!!, response.raw()))
-        }
-        else -> {
-          for (data in body.data.values) {
-            observer.onNext(RetrofitResponse.success(data))
-          }
-        }
+        else ->
+          observer.onNext(RetrofitResponse.success(body.data))
       }
     }
 

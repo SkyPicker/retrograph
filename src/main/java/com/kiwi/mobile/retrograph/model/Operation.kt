@@ -1,5 +1,7 @@
 package com.kiwi.mobile.retrograph.model
 
+import kotlin.reflect.*
+
 /**
  * Class representing query operation.
  *
@@ -38,6 +40,11 @@ class Operation(
   fun objectField(name: String, alias: String = "") = selectionSet.objectField(name, alias)
 
   fun fieldsOf(name: String, clazz: Class<*>) =
+    apply {
+      selectionSet.fieldsOf(name, clazz)
+    }
+
+  fun fieldsOf(name: String, clazz: KClass<*>) =
     apply {
       selectionSet.fieldsOf(name, clazz)
     }

@@ -31,7 +31,7 @@ class ObservableTest {
 
   private companion object {
     private const val BODY = """"Hi""""
-    private const val GRAPH_QL_BODY = """{ "data": { "default" : "Hi" } }"""
+    private const val GRAPH_QL_BODY = """{ "data": "Hi" }"""
   }
 
   internal interface Service {
@@ -188,7 +188,7 @@ class ObservableTest {
       .subscribe(observer)
 
     observer.assertValue(
-      GraphQLResponse(mapOf(Pair("default", "Hi")))
+      GraphQLResponse("Hi")
     )
       .assertComplete()
   }
@@ -322,7 +322,7 @@ class ObservableTest {
     assertThat(response.isSuccessful)
       .isTrue()
     assertThat(response.body())
-      .isEqualTo(GraphQLResponse(mapOf(Pair("default", "Hi"))))
+      .isEqualTo(GraphQLResponse("Hi"))
     observer.assertComplete()
   }
 
@@ -482,7 +482,7 @@ class ObservableTest {
     assertThat(response.isSuccessful)
       .isTrue()
     assertThat(response.body())
-      .isEqualTo(GraphQLResponse(mapOf(Pair("default", "Hi"))))
+      .isEqualTo(GraphQLResponse("Hi"))
     observer.assertComplete()
   }
 

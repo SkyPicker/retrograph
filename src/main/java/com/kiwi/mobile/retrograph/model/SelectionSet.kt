@@ -1,5 +1,7 @@
 package com.kiwi.mobile.retrograph.model
 
+import kotlin.reflect.*
+
 /**
  * Class representing selection set.
  *
@@ -41,6 +43,12 @@ class SelectionSet<TParent>(
       }
 
   fun fieldsOf(name: String, clazz: Class<*>) =
+    apply {
+      objectField(name)
+        .fieldsOf(clazz)
+    }
+
+  fun fieldsOf(name: String, clazz: KClass<*>) =
     apply {
       objectField(name)
         .fieldsOf(clazz)

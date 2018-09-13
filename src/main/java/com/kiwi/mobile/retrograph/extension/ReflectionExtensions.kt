@@ -18,14 +18,50 @@ val Class<*>.isPrimitiveOrWrapper
     || (this == String::class.java)
     || (this == Byte::class.java)
     || (this == Short::class.java)
-    || (this == Int::class.java)
+    || (this == Integer::class.java)
     || (this == Long::class.java)
     || (this == Float::class.java)
     || (this == Double::class.java)
     || (this == Void::class.java)
 
+val Type.isList
+  get() = isParameterized && (this is List<*>)
+
+val Field.isPublic
+  get() = Modifier.isPublic(modifiers)
+
+val Field.isPrivate
+  get() = Modifier.isPrivate(modifiers)
+
+val Field.isProtected
+  get() = Modifier.isProtected(modifiers)
+
+val Field.isStatic
+  get() = Modifier.isStatic(modifiers)
+
 val Field.isFinal
   get() = Modifier.isFinal(modifiers)
+
+val Field.isSynchronized
+  get() = Modifier.isSynchronized(modifiers)
+
+val Field.isVolatile
+  get() = Modifier.isVolatile(modifiers)
+
+val Field.isTransient
+  get() = Modifier.isTransient(modifiers)
+
+val Field.isNative
+  get() = Modifier.isNative(modifiers)
+
+val Field.isInterface
+  get() = Modifier.isInterface(modifiers)
+
+val Field.isAbstract
+  get() = Modifier.isAbstract(modifiers)
+
+val Field.isStrict
+  get() = Modifier.isStrict(modifiers)
 
 val Field.serializedName
   get() = getAnnotation(SerializedName::class.java)?.value ?: name

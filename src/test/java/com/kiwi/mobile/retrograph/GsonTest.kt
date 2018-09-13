@@ -10,7 +10,7 @@ import org.junit.*
 class GsonTest {
 
   private companion object {
-    private const val GRAPH_QL_BODY = """{ "data": { "default" : "Hi" } }"""
+    private const val GRAPH_QL_BODY = """{ "data": "Hi" }"""
   }
 
   @Test
@@ -25,10 +25,7 @@ class GsonTest {
     assertThat(response)
       .isNotNull
     assertThat(response.data)
-      .isNotNull
-      .isNotEmpty
-      .containsKey("default")
-      .containsValue("Hi")
+      .isEqualTo("Hi")
     assertThat(response.errors)
       .isNotNull
       .isEmpty()

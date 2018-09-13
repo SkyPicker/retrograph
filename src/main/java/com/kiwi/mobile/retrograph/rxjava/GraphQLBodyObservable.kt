@@ -72,15 +72,11 @@ class GraphQLBodyObservable<T>(
 
     private fun sendResponse(response: RetrofitResponse<GraphQLResponse<R>>) {
       val body = response.body()
-      when (body) {
-        null -> {
+      when {
+        body?.data == null ->
           throwException(HttpException(response))
-        }
-        else -> {
-          for (data in body.data.values) {
-            observer.onNext(data)
-          }
-        }
+        else ->
+          observer.onNext(body.data)
       }
     }
 
