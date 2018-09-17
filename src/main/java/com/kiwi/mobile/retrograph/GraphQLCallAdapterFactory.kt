@@ -58,16 +58,12 @@ class GraphQLCallAdapterFactory private constructor(
     if (rawType == Completable::class.java) {
       // Completable is not parameterized (which is what the rest of this method deals with) so it
       // can only be created with a single configuration.
-      return GraphQLCallAdapter<GraphQLResponse<Any>, Any>(
-        ResponseBody::class.java, scheduler, false, true, false, false, false, false, true
+      return GraphQLCallAdapter<Any>(
+        ResponseBody::class.java, scheduler, false, true, false, RxType.COMPLETABLE
       )
     }
 
-    val isObservable = rawType == Observable::class.java
-    val isFlowable = rawType == Flowable::class.java
-    val isSingle = rawType == Single::class.java
-    val isMaybe = rawType == Maybe::class.java
-    if (!isObservable && !isFlowable && !isSingle && !isMaybe) {
+    if (!rawType.isRxType) {
       return null
     }
 
@@ -76,14 +72,7 @@ class GraphQLCallAdapterFactory private constructor(
     var isGraphQLResponse = false
     val responseType: Type
     if (!returnType.isParameterized || returnType.isWildcardGeneric) {
-      val name = when {
-        isFlowable -> "Flowable"
-        isSingle -> "Single"
-        isMaybe -> "Maybe"
-        isObservable -> "Observable"
-        else -> "Unknown"
-      }
-      throwRxMustBeParametrized(name)
+      throwRxTypeMustBeParametrized(rawType.rxType)
     }
 
     val observableType = returnType.parameterUpperBound!!
@@ -142,9 +131,8 @@ class GraphQLCallAdapterFactory private constructor(
       }
     }
 
-    return GraphQLCallAdapter<GraphQLResponse<Any>, Any>(
-      responseType, scheduler, isResult, isBody, isGraphQLResponse, isFlowable, isSingle, isMaybe,
-      false
+    return GraphQLCallAdapter<Any>(
+      responseType, scheduler, isResult, isBody, isGraphQLResponse, rawType.rxType
     )
   }
 
@@ -155,9 +143,9 @@ class GraphQLCallAdapterFactory private constructor(
   private fun isGraphQLRequest(annotations: Array<Annotation>) = annotations
     .find { it is GraphQL } != null
 
-  private fun throwRxMustBeParametrized(name: String) {
+  private fun throwRxTypeMustBeParametrized(type: RxType) {
     throw IllegalStateException(
-      "$name return type must be parameterized as $name<Foo> or $name<? extends Foo>"
+      "${type.id} return type must be parameterized as ${type.id}<Foo> or ${type.id}<? extends Foo>"
     )
   }
 

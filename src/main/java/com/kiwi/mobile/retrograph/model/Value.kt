@@ -1,9 +1,7 @@
 package com.kiwi.mobile.retrograph.model
 
-import com.kiwi.mobile.retrograph.extension.*
-
 /**
- * Class representing argument value.
+ * Class representing argument primitive value.
  */
 open class Value<TValue>(
   val name: String = "",
@@ -12,82 +10,130 @@ open class Value<TValue>(
 
   // region Public Methods
 
-  override fun toString() = "$name: ${buildValueString()}"
+  override fun toString() = "${buildNameString()}${buildValueString()}"
 
   // endregion Public Methods
 
-  // region Private Methods
+  // region Protected Methods
 
-  private fun buildValueString() =
+  protected open fun buildNameString() = if (name.isNotEmpty()) "$name: " else ""
+
+  protected open fun buildValueString() =
     when (value) {
       is String -> "\"$value\""
-      is Array<*> -> "[" + value.joinToString(separator = ", ") + "]"
       else -> "$value"
     }
 
-  // endregion Private Methods
+  // endregion Protected Methods
 }
 
 /**
- * Class representing argument object value.
- *
- * @param TParent [Argument] or [Value].
+ * Class representing argument list value.
  */
-class ObjectValue<TParent>(
-  val parent: TParent,
+class ListValue<TValuesParent>(
+  val parent: Values<TValuesParent>,
   name: String = ""
 ):
-  Value<MutableList<Value<*>>>(name, mutableListOf()) {
+  Value<Unit>(name, Unit) {
 
   // region Public Properties
 
   val isEmpty
-    get() = value.isEmpty()
+    get() = values.isEmpty
 
   val isNotEmpty
     get() = !isEmpty
 
   // endregion Public Properties
 
+  // region Private Properties
+
+  private val values = Values(this)
+
+  // endregion Private Properties
+
   // region Public Methods
+
+  fun values() = values
+
+  fun value(value: Any?) =
+    apply {
+      values.value("", value)
+    }
+
+  fun values(vararg values: Any?) =
+    apply {
+      values.forEach {
+        this.values.value("", it)
+      }
+    }
+
+  fun objectValue() =
+    values.objectValue("")
+
+  fun finish() = parent.finish()
+
+  // endregion Public Methods
+
+  // region Protected Methods
+
+  override fun buildValueString() = "[ $values ]"
+
+  // endregion Protected Methods
+}
+
+/**
+ * Class representing argument object value.
+ *
+ * @param TValuesParent Values parent instance of [ObjectArgument] or [ObjectValue].
+ */
+class ObjectValue<TValuesParent>(
+  val parent: Values<TValuesParent>,
+  name: String = ""
+):
+  Value<Unit>(name, Unit) {
+
+  // region Public Properties
+
+  val isEmpty
+    get() = values.isEmpty
+
+  val isNotEmpty
+    get() = !isEmpty
+
+  // endregion Public Properties
+
+  // region Private Properties
+
+  private val values = Values(this)
+
+  // endregion Private Properties
+
+  // region Public Methods
+
+  fun values() = values
 
   fun value(name: String, value: Any?) =
     apply {
-      this.value.add(Value(name, value))
+      values.value(name, value)
     }
 
-  fun value(name: String, values: List<Any?>) =
-    apply {
-      value.add(Value(name, values))
-    }
+  fun listValue(name: String) =
+    values.listValue(name)
 
   fun objectValue(name: String) =
-    ObjectValue(this, name)
-      .also {
-        value.add(it)
-      }
+    values.objectValue(name)
 
-  fun valuesOf(instance: Any): ObjectValue<TParent> =
-    apply {
-      instance.javaClass.declaredFields
-        .filter { !it.isFinal }
-        .map {
-          when {
-            it.type.isPrimitiveOrWrapper ->
-              value(it.serializedName, it.get(instance))
-            it.type.isArray ->
-              value(it.serializedName, it.get(instance))
-            else ->
-              objectValue(it.serializedName)
-                .valuesOf(it.get(instance))
-          }
-          parent
-        }
-    }
+  fun valuesOf(instance: Any?): Values<ObjectValue<TValuesParent>> =
+    values.valuesOf(instance)
 
-  fun finish() = parent
-
-  override fun toString() = """$name: { ${value.joinToString(separator = ", ")} }"""
+  fun finish() = parent.finish()
 
   // endregion Public Methods
+
+  // region Protected Methods
+
+  override fun buildValueString() = "{ $values }"
+
+  // endregion Protected Methods
 }

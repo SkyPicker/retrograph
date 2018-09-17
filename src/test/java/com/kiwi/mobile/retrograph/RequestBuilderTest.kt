@@ -30,7 +30,7 @@ class RequestBuilderTest {
       .build()
 
     assertThat(request.query)
-      .isEqualTo("query  {  }")
+      .isEqualTo("query {  }")
     assertThat(request.variables)
       .isEqualTo("{}")
   }
@@ -43,7 +43,7 @@ class RequestBuilderTest {
       .build()
 
     assertThat(request.query)
-      .isEqualTo("subscription  {  }")
+      .isEqualTo("subscription {  }")
     assertThat(request.variables)
       .isEqualTo("{}")
   }
@@ -56,7 +56,7 @@ class RequestBuilderTest {
       .build()
 
     assertThat(request.query)
-      .isEqualTo("mutation  {  }")
+      .isEqualTo("mutation {  }")
     assertThat(request.variables)
       .isEqualTo("{}")
   }
@@ -69,7 +69,7 @@ class RequestBuilderTest {
     assertThat(builder.operation())
       .isInstanceOf(Operation::class.java)
     assertThat(request.query)
-      .isEqualTo("query  {  }")
+      .isEqualTo("query {  }")
     assertThat(request.variables)
       .isEqualTo("{}")
   }
@@ -99,7 +99,7 @@ class RequestBuilderTest {
       .build()
 
     assertThat(request.query)
-      .isEqualTo("query  {  }")
+      .isEqualTo("query {  }")
     assertThat(request.variables)
       .isEqualTo(
         """{"int":123456,"long":123456789123456789,"float":2.5,"double":33.3,"boolean":true,"object":{"first":"a","second":"b"}}"""
@@ -139,26 +139,26 @@ class RequestBuilderTest {
     assertThat(request.query)
       .isEqualTo(
         // @formatter:off
-        "query  { "
-          + "get_flights( "
-            + "providers: KIWI, "
-            + "parameters: { "
-              + "flyFrom: \"DEN\", "
-              + "to: \"FRA\", "
-              + "dateFrom: \"20/04/2018\", "
-              + "dateTo: \"20/05/2018\" "
-            + "}, "
-            + "pagination: { "
-              + "offset: 0, "
-              + "limit: 5 "
-            + "} "
-          + ") { "
-            + "data { "
-              + "id, "
-              + "price "
-            + "} "
-          + "} "
-        + "}"
+        "query { " +
+          "get_flights( " +
+            "providers: KIWI, " +
+              "parameters: { " +
+              "flyFrom: \"DEN\", " +
+              "to: \"FRA\", " +
+              "dateFrom: \"20/04/2018\", " +
+              "dateTo: \"20/05/2018\" " +
+            "}, " +
+            "pagination: { " +
+              "offset: 0, " +
+              "limit: 5 " +
+            "} " +
+          ") { " +
+            "data { " +
+              "id, " +
+              "price " +
+            "} " +
+          "} " +
+        "}"
         // @formatter:on
       )
     assertThat(request.variables)

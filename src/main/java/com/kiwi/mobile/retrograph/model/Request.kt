@@ -6,4 +6,16 @@ class Request(
   var query: String,
   var variables: String
 ):
-  Serializable
+  Serializable {
+
+  // region Public Methods
+
+  // TODO: Replace with JsonObject.
+  override fun toString() =
+    "{ " +
+      "\"query\": $query, " +
+      "\"variables\": $variables " +
+      "}"
+
+  // endregion Public Methods
+}
