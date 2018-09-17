@@ -20,26 +20,68 @@ class OperationTest {
   // TODO: Kotlin reflection and properties.
 
   @Suppress("unused")
-  class Object<T>(
+  class Object(
     val int: Int,
     val long: Long,
+    val float: Float,
     val double: Double,
     val boolean: Boolean,
     val string: String,
     val enum: Enum,
-    //val intList: List<Int>,
-    //val enumList: List<Enum>,
-    //val objectList: List<Item>
+    val `object`: Foo,
+    val intList: List<Int>,
+    val enumList: List<Enum>,
+    val objectList: List<Foo>,
     val intArray: Array<Int>,
-    //val enumArray: Array<Enum>,
-    val objectArray: Array<Item>,
-    val genericObject: Generic<T>,
-    val templateArgumentObject: T
+    val enumArray: Array<Enum>,
+    val objectArray: Array<Foo>
   )
 
   @Suppress("unused")
-  class Item(
-    val name: String
+  class GenericObject<T>(
+    val int: Int,
+    val long: Long,
+    val float: Float,
+    val double: Double,
+    val boolean: Boolean,
+    val string: String,
+    val enum: Enum,
+    val `object`: Foo,
+    val intList: List<Int>,
+    val enumList: List<Enum>,
+    val objectList: List<Foo>,
+    val intArray: Array<Int>,
+    val enumArray: Array<Enum>,
+    val objectArray: Array<Foo>
+    //val genericObject: Generic<T>,
+    //val templateArgumentObject: T
+  )
+
+  @Suppress("unused")
+  class TestArguments(
+    val int: Int = 99,
+    val long: Long = 999999L,
+    val float: Float = 99.99f,
+    val double: Double = 999.99,
+    val boolean: Boolean = true,
+    val string: String = "test",
+    val enum: Enum = Enum.B,
+    val `null`: Any? = null,
+    val emptyObject: Any = Any(),
+    val `object`: Foo = Foo(),
+    val emptyList: List<Int> = listOf(),
+    val intList: List<Int> = listOf(1, 2, 3),
+    val enumList: List<Enum> = listOf(Enum.A, Enum.B),
+    val objectList: List<Foo> = listOf(Foo()),
+    val emptyArray: Array<Int> = arrayOf(),
+    val intArray: Array<Int> = arrayOf(1, 2, 3),
+    val enumArray: Array<Enum> = arrayOf(Enum.A, Enum.B),
+    val objectArray: Array<Foo> = arrayOf(Foo())
+  )
+
+  @Suppress("unused")
+  class Foo(
+    val name: String = "test"
   )
 
   @Suppress("unused")
@@ -48,22 +90,45 @@ class OperationTest {
   )
 
   @Suppress("unused")
-  class Foo<T>(
+  class PrimitiveFields<T>(
     val int: Int,
     val long: Long,
+    val float: Float,
     val double: Double,
     val boolean: Boolean,
     val string: String,
-    val enum: Enum,
-    //val intList: List<Int>,
-    //val enumList: List<Enum>,
-    //val objectList: List<Item>
+    val enum: Enum
+  )
+
+  @Suppress("unused")
+  class ObjectFields(
+    val `object`: Object,
+    val genericObject: GenericObject<Foo>
+  )
+
+  @Suppress("unused")
+  class CollectionFields<T>(
+    val intList: List<Int>,
+    val enumList: List<Enum>,
+    val objectList: List<Foo>,
     val intArray: Array<Int>,
-    //val enumArray: Array<Enum>,
-    val objectArray: Array<Item>,
-    val `object`: Object<String>,
-    val genericObject: Generic<T>,
-    val templateArgumentObject: T
+    val enumArray: Array<Enum>,
+    val objectArray: Array<Foo>
+  )
+
+  @Suppress("unused")
+  class ArgumentFields<T>(
+    val int: Int,
+    val long: Long,
+    val float: Float,
+    val double: Double,
+    val `object`: Object
+  )
+
+  @Suppress("unused")
+  class ArgumentFieldsArguments(
+    val int: TestArguments = TestArguments(),
+    val `object`: TestArguments = TestArguments()
   )
 
   // endregion Private Types
@@ -93,7 +158,7 @@ class OperationTest {
     // then
 
     assertThat(serialized)
-      .isEqualTo("query  {  }")
+      .isEqualTo("query {  }")
   }
 
   @Test
@@ -128,7 +193,7 @@ class OperationTest {
     assertThat(operation)
       .isInstanceOf(Operation::class.java)
     assertThat(serialized)
-      .isEqualTo("query  { a }")
+      .isEqualTo("query { a }")
   }
 
   @Test
@@ -150,7 +215,7 @@ class OperationTest {
     assertThat(operation)
       .isInstanceOf(Operation::class.java)
     assertThat(serialized)
-      .isEqualTo("query  { a }")
+      .isEqualTo("query { a }")
   }
 
   @Test
@@ -172,18 +237,15 @@ class OperationTest {
     assertThat(operation)
       .isInstanceOf(Operation::class.java)
     assertThat(serialized)
-      .isEqualTo("query  { a, b, c }")
+      .isEqualTo("query { a, b, c }")
   }
 
   @Test
-  fun whenFieldsOfObject_thenSerialized() {
+  fun whenPrimitiveFieldsOfObject_thenSerialized() {
     // given
 
     val operation = Operation(mockParent)
-      .fieldsOf("a", Foo::class.java)
-
-    /*val operation = Operation(mockParent)
-      .fieldsOf("a", Foo::class)*/
+      .fieldsOf(PrimitiveFields::class.java)
 
     // when
 
@@ -195,10 +257,237 @@ class OperationTest {
       .isInstanceOf(Operation::class.java)
     assertThat(serialized)
       .isEqualTo(
-        "query  { a { int, long, double, boolean, string, enum, intArray, objectArray { name },"
-          + " object { int, long, double, boolean, string, enum, intArray, objectArray { name },"
-          + " genericObject { value }, templateArgumentObject }, genericObject { value },"
-          + " templateArgumentObject } }"
+        // @formatter:off
+        "query { " +
+          "int, " +
+          "long, " +
+          "float, " +
+          "double, " +
+          "boolean, " +
+          "string, " +
+          "enum " +
+        "}"
+        // @formatter:on
+      )
+  }
+
+  @Test
+  fun whenObjectFieldsOfObject_thenSerialized() {
+    // given
+
+    val operation = Operation(mockParent)
+      .fieldsOf(ObjectFields::class.java)
+
+    // when
+
+    val serialized = operation.toString()
+
+    // then
+
+    assertThat(operation)
+      .isInstanceOf(Operation::class.java)
+    assertThat(serialized)
+      .isEqualTo(
+        // @formatter:off
+        "query { " +
+          "object { " +
+            "int, " +
+            "long, " +
+            "float, " +
+            "double, " +
+            "boolean, " +
+            "string, " +
+            "enum, " +
+            "object { " +
+              "name " +
+            "}, " +
+            "intList, " +
+            "enumList, " +
+            "objectList { " +
+              "name " +
+            "}, " +
+            "intArray, " +
+            "enumArray, " +
+            "objectArray { " +
+              "name " +
+            "} "          +
+          "}, " +
+          "genericObject { " +
+            "int, " +
+            "long, " +
+            "float, " +
+            "double, " +
+            "boolean, " +
+            "string, " +
+            "enum, " +
+            "object { " +
+              "name " +
+            "}, " +
+            "intList, " +
+            "enumList, " +
+            "objectList { " +
+              "name " +
+            "}, " +
+            "intArray, " +
+            "enumArray, " +
+            "objectArray { " +
+              "name " +
+            "} " +
+            /*"genericObject { " +
+              "value {" +
+                "name " +
+              "} " +
+            "}, " +
+            "templateArgumentObject {" +
+              "name " +
+            "} " +*/
+          "} " +
+        "}"
+        // @formatter:on
+      )
+  }
+
+  @Test
+  fun whenCollectionFieldsOfObject_thenSerialized() {
+    // given
+
+    val operation = Operation(mockParent)
+      .fieldsOf(CollectionFields::class.java)
+
+    // when
+
+    val serialized = operation.toString()
+
+    // then
+
+    assertThat(operation)
+      .isInstanceOf(Operation::class.java)
+    assertThat(serialized)
+      .isEqualTo(
+        // @formatter:off
+        "query { " +
+          "intList, " +
+          "enumList, " +
+          "objectList { " +
+            "name " +
+          "}, " +
+          "intArray, " +
+          "enumArray, " +
+          "objectArray { " +
+            "name " +
+          "} " +
+        "}"
+        // @formatter:on
+      )
+  }
+
+  @Test
+  fun whenArgumentFieldsOfObject_thenSerialized() {
+    // given
+
+    val operation = Operation(mockParent)
+      .fieldsOf(ArgumentFields::class.java, ArgumentFieldsArguments())
+
+    // when
+
+    val serialized = operation.toString()
+
+    // then
+
+    assertThat(operation)
+      .isInstanceOf(Operation::class.java)
+    assertThat(serialized)
+      .isEqualTo(
+        // @formatter:off
+        "query { " +
+          "int( " +
+            "int: 99, " +
+            "long: 999999, " +
+            "float: 99.99, " +
+            "double: 999.99, " +
+            "boolean: true, " +
+            "string: \"test\", " +
+            "enum: B, " +
+            "null: null, " +
+            "emptyObject: {  " +
+            "}, " +
+            "object: { " +
+              "name: \"test\" " +
+            "}, " +
+            "emptyList: [  ], " +
+            "intList: [ 1, 2, 3 ], " +
+            "enumList: [ A, B ], " +
+            "objectList: [ " +
+              "{ " +
+                "name: \"test\" " +
+              "} " +
+            "], " +
+            "emptyArray: [  ], " +
+            "intArray: [ 1, 2, 3 ], " +
+            "enumArray: [ A, B ], " +
+            "objectArray: [ " +
+              "{ " +
+                "name: \"test\" " +
+              "} " +
+            "] " +
+          "), " +
+          "long, " +
+          "float, " +
+          "double, " +
+          "object( " +
+            "int: 99, " +
+            "long: 999999, " +
+            "float: 99.99, " +
+            "double: 999.99, " +
+            "boolean: true, " +
+            "string: \"test\", " +
+            "enum: B, " +
+            "null: null, " +
+            "emptyObject: {  " +
+            "}, " +
+            "object: { " +
+              "name: \"test\" " +
+            "}, " +
+            "emptyList: [  ], " +
+            "intList: [ 1, 2, 3 ], " +
+            "enumList: [ A, B ], " +
+            "objectList: [ " +
+              "{ " +
+                "name: \"test\" " +
+              "} " +
+            "], " +
+            "emptyArray: [  ], " +
+            "intArray: [ 1, 2, 3 ], " +
+            "enumArray: [ A, B ], " +
+            "objectArray: [ " +
+              "{ " +
+                "name: \"test\" " +
+              "} " +
+            "] " +
+          ") { " +
+            "int, " +
+            "long, " +
+            "float, " +
+            "double, " +
+            "boolean, " +
+            "string, " +
+            "enum, " +
+            "object { " +
+              "name " +
+            "}, " +
+            "intList, " +
+            "enumList, " +
+            "objectList { " +
+              "name " +
+            "}, " +
+            "intArray, " +
+            "enumArray, " +
+            "objectArray { " +
+              "name " +
+            "} " +
+          "} " +
+        "}"
+        // @formatter:on
       )
   }
 
@@ -221,7 +510,7 @@ class OperationTest {
     assertThat(operation)
       .isInstanceOf(Operation::class.java)
     assertThat(serialized)
-      .isEqualTo("query  { aa: a, bb: b, c }")
+      .isEqualTo("query { aa: a, bb: b, c }")
   }
 
   @Test

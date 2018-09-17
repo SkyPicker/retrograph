@@ -1,6 +1,7 @@
 package com.kiwi.mobile.retrograph
 
 import com.kiwi.mobile.retrograph.extension.*
+import com.kiwi.mobile.retrograph.model.*
 
 import io.reactivex.*
 
@@ -61,15 +62,11 @@ class RxJava2CallAdapterFactory private constructor(
       // Completable is not parameterized (which is what the rest of this method deals with) so it
       // can only be created with a single configuration.
       return RxJava2CallAdapter<Any>(
-        ResponseBody::class.java, scheduler, isAsync, false, true, false, false, false, true
+        ResponseBody::class.java, scheduler, isAsync, false, true, RxType.COMPLETABLE
       )
     }
 
-    val isObservable = rawType == Observable::class.java
-    val isFlowable = rawType == Flowable::class.java
-    val isSingle = rawType == Single::class.java
-    val isMaybe = rawType == Maybe::class.java
-    if (!isObservable && !isFlowable && !isSingle && !isMaybe) {
+    if (!rawType.isRxType) {
       return null
     }
 
@@ -77,16 +74,10 @@ class RxJava2CallAdapterFactory private constructor(
     var isBody = false
     val responseType: Type
     if (!returnType.isParameterized || returnType.isWildcardGeneric) {
-      val name = when {
-        isFlowable -> "Flowable"
-        isSingle -> "Single"
-        isMaybe -> "Maybe"
-        isObservable -> "Observable"
-        else -> "Unknown"
-      }
+      val name = rawType.rxType.id
       throw IllegalStateException(
-        name + " return type must be parameterized as " + name + "<Foo> or " + name
-          + "<? extends Foo>"
+        name + " return type must be parameterized as " + name + "<Foo> or " + name +
+          "<? extends Foo>"
       )
     }
 
@@ -117,7 +108,7 @@ class RxJava2CallAdapterFactory private constructor(
     }
 
     return RxJava2CallAdapter<Any>(
-      responseType, scheduler, isAsync, isResult, isBody, isFlowable, isSingle, isMaybe, false
+      responseType, scheduler, isAsync, isResult, isBody, rawType.rxType
     )
   }
 

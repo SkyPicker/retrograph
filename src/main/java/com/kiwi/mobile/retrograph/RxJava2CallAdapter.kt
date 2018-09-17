@@ -1,17 +1,15 @@
 package com.kiwi.mobile.retrograph
 
+import com.kiwi.mobile.retrograph.model.*
 import com.kiwi.mobile.retrograph.rxjava.*
 
 import io.reactivex.*
 import io.reactivex.plugins.*
 
 import retrofit2.*
+import retrofit2.Response
 
 import java.lang.reflect.*
-
-import com.kiwi.mobile.retrograph.model.Response as GraphQLResponse
-
-import retrofit2.Response as RetrofitResponse
 
 internal class RxJava2CallAdapter<R>(
   private val responseType: Type,
@@ -19,10 +17,7 @@ internal class RxJava2CallAdapter<R>(
   private val isAsync: Boolean,
   private val isResult: Boolean,
   private val isBody: Boolean,
-  private val isFlowable: Boolean,
-  private val isSingle: Boolean,
-  private val isMaybe: Boolean,
-  private val isCompletable: Boolean
+  private val rxType: RxType
 ):
   CallAdapter<R, Any> {
 
@@ -30,31 +25,42 @@ internal class RxJava2CallAdapter<R>(
 
   override fun responseType() = responseType
 
-  override fun adapt(call: Call<R>): Any {
-    val responseObservable = if (isAsync) {
+  override fun adapt(call: Call<R>) =
+    if (isAsync) {
       CallEnqueueObservable(call)
     } else {
       CallExecuteObservable(call)
     }
-
-    var observable: Observable<*> = when {
-      isResult -> ResultObservable(responseObservable)
-      isBody -> BodyObservable(responseObservable)
-      else -> responseObservable
-    }
-
-    if (scheduler != null) {
-      observable = observable.subscribeOn(scheduler)
-    }
-
-    return when {
-      isFlowable -> observable.toFlowable(BackpressureStrategy.LATEST)
-      isSingle -> observable.singleOrError()
-      isMaybe -> observable.singleElement()
-      isCompletable -> observable.ignoreElements()
-      else -> RxJavaPlugins.onAssembly(observable)
-    }
-  }
+      .adapt()
+      .applyScheduler()
+      .toTarget()
 
   // endregion Public Methods
+
+  // region Private Methods
+
+  private fun Observable<Response<R>>.adapt() =
+    when {
+      isResult -> ResultObservable(this)
+      isBody -> BodyObservable(this)
+      else -> this
+    }
+
+  private fun Observable<*>.applyScheduler() =
+    if (scheduler != null) {
+      subscribeOn(scheduler)
+    } else {
+      this
+    }
+
+  private fun Observable<*>.toTarget(): Any =
+    when (rxType) {
+      RxType.FLOWABLE -> toFlowable(BackpressureStrategy.LATEST)
+      RxType.SINGLE -> singleOrError()
+      RxType.MAYBE -> singleElement()
+      RxType.COMPLETABLE -> ignoreElements()
+      else -> RxJavaPlugins.onAssembly(this)
+    }
+
+  // endregion Private Methods
 }

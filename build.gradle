@@ -77,9 +77,9 @@ uploadArchives {
   repositories {
     mavenDeployer {
       repository(url: "http://trinerdis.cz:8000/repository/snapshots/") {
-        authentication(userName: "deployment", password: "pwn3dbypicky")
+        authentication(userName: "deployment", password: System.getenv("DEPLOYMENT_PASSWORD"))
       }
-      pom.version = "0.1-SNAPSHOT"
+      pom.version = retrographVersion
       pom.artifactId = "retrograph"
       pom.groupId = "com.kiwi.mobile"
     }

@@ -2,14 +2,19 @@ package com.kiwi.mobile.retrograph.model
 
 import com.kiwi.mobile.retrograph.extension.*
 
-class Arguments<TSelectionSetParent>(
-  val parent: Field<TSelectionSetParent>
+/**
+ * Class representing argument object value.
+ *
+ * @param TParent Parent instance of [ObjectArgument] or [Value].
+ */
+class Values<TParent>(
+  val parent: TParent
 ) {
 
   // region Public Properties
 
   val isEmpty
-    get() = arguments.isEmpty()
+    get() = values.isEmpty()
 
   val isNotEmpty
     get() = !isEmpty
@@ -18,30 +23,31 @@ class Arguments<TSelectionSetParent>(
 
   // region Private Properties
 
-  private val arguments = mutableListOf<Argument<*>>()
+  private val values = mutableListOf<Value<*>>()
 
   // endregion Private Properties
 
   // region Public Methods
 
-  fun argument(name: String, value: Any?) =
-    apply {
-      arguments.add(Argument(name, value))
-    }
-
-  fun listArgument(name: String) =
-    ListArgument(this, name)
+  fun value(name: String, value: Any?) =
+    Value(name, value)
       .also {
-        arguments.add(it)
+        values.add(it)
       }
 
-  fun objectArgument(name: String) =
-    ObjectArgument(this, name)
+  fun listValue(name: String) =
+    ListValue(this, name)
       .also {
-        arguments.add(it)
+        values.add(it)
       }
 
-  fun argumentsOf(instance: Any?) =
+  fun objectValue(name: String) =
+    ObjectValue(this, name)
+      .also {
+        values.add(it)
+      }
+
+  fun valuesOf(instance: Any?) =
     apply {
       instance.fields
         .filter { !it.value.isTransient }
@@ -51,20 +57,20 @@ class Arguments<TSelectionSetParent>(
           val value = field.get(instance)
           when {
             value == null ->
-              argument(name, null)
+              value(name, null)
             field.type.isPrimitiveOrWrapper ->
-              argument(name, value)
+              value(name, value)
             field.type.isEnum ->
-              argument(name, value)
+              value(name, value)
             field.type.isArray -> {
               val array = value as Array<*>
-              val componentType = field.parameterUpperBound!!
+              val componentType = field.type.componentType
               if (componentType.isPrimitiveOrWrapper || componentType.isEnum) {
-                listArgument(name)
+                listValue(name)
                   .values(*array)
                   .finish()
               } else {
-                listArgument(name)
+                listValue(name)
                   .apply {
                     value.forEach { item ->
                       objectValue()
@@ -79,11 +85,11 @@ class Arguments<TSelectionSetParent>(
               val array = (value as List<*>).toTypedArray()
               val componentType = field.parameterUpperBound!!
               if (componentType.isPrimitiveOrWrapper || componentType.isEnum) {
-                listArgument(name)
+                listValue(name)
                   .values(*array)
                   .finish()
               } else {
-                listArgument(name)
+                listValue(name)
                   .apply {
                     value.forEach { item ->
                       objectValue()
@@ -95,7 +101,7 @@ class Arguments<TSelectionSetParent>(
               }
             }
             else ->
-              objectArgument(name)
+              objectValue(name)
                 .valuesOf(value)
                 .finish()
           }
@@ -104,7 +110,7 @@ class Arguments<TSelectionSetParent>(
 
   fun finish() = parent
 
-  override fun toString() = arguments.joinToString(separator = ", ")
+  override fun toString() = values.joinToString(separator = ", ")
 
   // endregion Public Methods
 }

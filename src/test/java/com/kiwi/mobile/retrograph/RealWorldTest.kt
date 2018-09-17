@@ -28,23 +28,24 @@ class RealWorldTest {
   // region Public Types
 
   enum class Provider {
-    KIWI
+    KIWI;
+
+    override fun toString() = name
   }
 
   data class GetFlights(
-    @Arguments(FlightsSourceArguments::class)
     val get_flights: FlightsSource
   )
 
   data class FlightsSource(
-    val data: List<FlightInterface>,
+    val data: Array<FlightInterface>,
     val currency: String,
-    @Alias("more_pending") val morePending: Boolean
+    @field:Alias("more_pending") val morePending: Boolean
   ) {
 
     data class FlightInterface(
       val id: String,
-      @Alias("booking_token") val bookingToken: String,
+      @field:Alias("booking_token") val bookingToken: String,
       val flyFrom: String,
       val flyTo: String,
       val cityFrom: String,
@@ -53,17 +54,24 @@ class RealWorldTest {
   }
 
   data class GetFlightsArguments(
-    val get_flights: FlightsSourceArguments
+    val get_flights: FlightsSourceArguments = FlightsSourceArguments()
   )
 
   data class FlightsSourceArguments(
-    val parameters: Parameters,
-    val providers: Array<Provider>
+    val parameters: Parameters = Parameters(),
+    val pagination: Pagination = Pagination(),
+    val providers: List<Provider> = listOf(Provider.KIWI)
   ) {
+
     data class Parameters(
-      val dateFrom: String,
-      val dateTo: String,
-      val flyFrom: String
+      val dateFrom: String = DATE_FROM,
+      val dateTo: String = DATE_TO,
+      val flyFrom: String = FLY_FROM
+    )
+
+    data class Pagination(
+      val limit: Int = LIMIT,
+      val offset: Int = OFFSET
     )
   }
 
@@ -73,32 +81,83 @@ class RealWorldTest {
 
   private companion object {
 
-    val GET_FLIGHT_ARGUMENTS = GetFlightsArguments(
-      get_flights = FlightsSourceArguments(
-        parameters = FlightsSourceArguments.Parameters(
-          dateFrom = "10/09/2018",
-          dateTo = "10/10/2018",
-          flyFrom = "london_gb"
-        ),
-        providers = arrayOf(Provider.KIWI)
-      )
-    )
+    const val DATE_FROM = "10/09/2018"
+    const val DATE_TO = "10/10/2019"
+    const val FLY_FROM = "london_gb"
+    const val LIMIT = 20
+    const val OFFSET = 0
+    val PROVIDER = Provider.KIWI
 
-    const val QUERY = "{\n" +
-      "  get_flights(parameters: {dateFrom: \"10/09/2018\", dateTo: \"10/10/2018\", flyFrom: \"london_gb\"}, providers: [KIWI]) {\n" +
-      "    data {\n" +
-      "      id\n" +
-      "      booking_token\n" +
-      "      flyFrom\n" +
-      "      flyTo\n" +
-      "      cityFrom\n" +
-      "      cityTo\n" +
-      "    }\n" +
-      "    currency\n" +
-      "    more_pending\n" +
-      "  }\n" +
-      "}\n"
+    // @formatter:off
+    val QUERY = "query { " +
+      "get_flights( " +
+        "parameters: { " +
+          "dateFrom: \"$DATE_FROM\", " +
+          "dateTo: \"$DATE_TO\", " +
+          "flyFrom: \"$FLY_FROM\" " +
+        "}, " +
+        "pagination: { " +
+          "limit: $LIMIT, " +
+          "offset: $OFFSET " +
+        "}, " +
+        "providers: [ $PROVIDER ] " +
+      ") { " +
+        "data { " +
+          "id, " +
+          "bookingToken: booking_token, " +
+          "flyFrom, " +
+          "flyTo, " +
+          "cityFrom, " +
+          "cityTo " +
+        "}, " +
+        "currency, " +
+        "morePending: more_pending " +
+      "} " +
+    "}"
+    // @formatter:on
+
     const val VARIABLES = "{}"
+
+    val STRING_REQUEST = Request(QUERY, VARIABLES)
+
+    // @formatter:off
+    val BUILD_REQUEST = RequestBuilder()
+      .operation()
+      .objectField("get_flights")
+        .arguments()
+          .objectArgument("parameters")
+            .value("dateFrom", DATE_FROM)
+            .value("dateTo", DATE_TO)
+            .value("flyFrom", FLY_FROM)
+            .finish()
+          .objectArgument("pagination")
+            .value("limit", LIMIT)
+            .value("offset", OFFSET)
+            .finish()
+          .listArgument("providers")
+            .value(PROVIDER)
+            .finish()
+          .finish()
+        .objectField("data")
+          .field("id")
+          .field("booking_token", "bookingToken")
+          .field("flyFrom")
+          .field("flyTo")
+          .field("cityFrom")
+          .field("cityTo")
+          .finish()
+        .field("currency")
+        .field("more_pending", "morePending")
+        .finish()
+      .finish()
+      .build()
+    // @formatter:on
+
+    val GENERATED_REQUEST = RequestBuilder()
+      .operation()
+      .fieldsOf(GetFlights::class.java, GetFlightsArguments())
+      .finish()
+      .build()
   }
 
   interface UmbrellaRequestService {
@@ -116,6 +175,10 @@ class RealWorldTest {
     @POST("graphql")
     @GraphQL
     fun getFlightsWithoutWrapper(@Body request: Request): Observable<GetFlights>
+
+    @POST("graphql")
+    @GraphQL
+    fun getFlightsWithoutWrapper(@Arguments arguments: GetFlightsArguments): Observable<GetFlights>
   }
 
   // endregion Private Types
@@ -155,20 +218,19 @@ class RealWorldTest {
   }
 
   @Test
-  fun whenGetFlightsWithWrapperAndRequestIsRequested_thenSomeDataAreRetrieved() {
+  fun whenGetFlightsWithWrapperAndStringRequestIsRequested_thenSomeDataAreRetrieved() {
     // given
 
     val observer = TestObserver<Response<GetFlights>>()
-    val request = Request(QUERY, VARIABLES)
 
     System.out.println(
-      "whenGetFlightsWithWrapperAndRequestIsRequested_thenSomeDataAreRetrieved(): request: "
-        + gson.toJson(request)
+      "whenGetFlightsWithWrapperAndStringRequestIsRequested_thenSomeDataAreRetrieved(): request: "
+        + STRING_REQUEST
     )
 
     // when
 
-    service.getFlightsWithWrapper(request)
+    service.getFlightsWithWrapper(STRING_REQUEST)
       .subscribe(observer)
     observer.awaitTerminalEvent()
     observer.dispose()
@@ -180,25 +242,71 @@ class RealWorldTest {
 
     val response = observer.values()[0]
 
+    assertResponseValid(response)
+  }
+
+  @Test
+  fun whenGetFlightsWithWrapperAndBuiltRequestIsRequested_thenSomeDataAreRetrieved() {
+    // given
+
+    val observer = TestObserver<Response<GetFlights>>()
+
     System.out.println(
-      "whenGetFlightsWithWrapperAndRequestIsRequested_thenSomeDataAreRetrieved(): response: "
-        + gson.toJson(response)
+      "whenGetFlightsWithWrapperAndBuiltRequestIsRequested_thenSomeDataAreRetrieved(): request: "
+        + BUILD_REQUEST
     )
 
-    assertThat(response.data)
-      .isNotNull
-    assertThat(response.data?.get_flights)
-      .isNotNull
-    assertThat(response.data?.get_flights?.data)
-      .isNotEmpty
-      .allSatisfy {
-        assertThat(it.id).isNotBlank()
-        // TODO: assertThat(it.bookingToken).isNotBlank()
-        assertThat(it.flyFrom).isNotBlank()
-        assertThat(it.flyTo).isNotBlank()
-        assertThat(it.cityFrom).isNotBlank()
-        assertThat(it.cityTo).isNotBlank()
-      }
+    assertThat(BUILD_REQUEST.toString())
+      .isEqualTo(STRING_REQUEST.toString())
+
+    // when
+
+    service.getFlightsWithWrapper(BUILD_REQUEST)
+      .subscribe(observer)
+    observer.awaitTerminalEvent()
+    observer.dispose()
+
+    // then
+
+    observer.assertComplete()
+    observer.assertNoErrors()
+
+    val response = observer.values()[0]
+
+    assertResponseValid(response)
+  }
+
+  @Test
+  fun whenGetFlightsWithWrapperAndGeneratedRequestIsRequested_thenSomeDataAreRetrieved() {
+    // given
+
+    val observer = TestObserver<Response<GetFlights>>()
+
+    System.out.println(
+      "whenGetFlightsWithWrapperAndGeneratedRequestIsRequested_thenSomeDataAreRetrieved(): request: "
+        + GENERATED_REQUEST
+    )
+
+    assertThat(GENERATED_REQUEST.toString())
+      .isEqualTo(STRING_REQUEST.toString())
+    assertThat(GENERATED_REQUEST.toString())
+      .isEqualTo(BUILD_REQUEST.toString())
+
+    // when
+
+    service.getFlightsWithWrapper(GENERATED_REQUEST)
+      .subscribe(observer)
+    observer.awaitTerminalEvent()
+    observer.dispose()
+
+    // then
+
+    observer.assertComplete()
+    observer.assertNoErrors()
+
+    val response = observer.values()[0]
+
+    assertResponseValid(response)
   }
 
   @Test
@@ -210,7 +318,7 @@ class RealWorldTest {
 
     // when
 
-    service.getFlightsWithWrapper(GET_FLIGHT_ARGUMENTS)
+    service.getFlightsWithWrapper(GetFlightsArguments())
       .subscribe(observer)
     observer.awaitTerminalEvent()
     observer.dispose()
@@ -222,42 +330,23 @@ class RealWorldTest {
 
     val response = observer.values()[0]
 
-    System.out.println(
-      "whenGetFlightsWithWrapperWithoutRequestIsRequested_thenSomeDataAreRetrieved(): response: "
-        + gson.toJson(response)
-    )
-
-    assertThat(response.data)
-      .isNotNull
-    assertThat(response.data?.get_flights)
-      .isNotNull
-    assertThat(response.data?.get_flights?.data)
-      .isNotEmpty
-      .allSatisfy {
-        assertThat(it.id).isNotBlank()
-        // TODO: assertThat(it.bookingToken).isNotBlank()
-        assertThat(it.flyFrom).isNotBlank()
-        assertThat(it.flyTo).isNotBlank()
-        assertThat(it.cityFrom).isNotBlank()
-        assertThat(it.cityTo).isNotBlank()
-      }
+    assertResponseValid(response)
   }
 
   @Test
-  fun whenGetFlightsWithoutWrapperIsRequested_thenSomeDataAreRetrieved() {
+  fun whenGetFlightsWithoutWrapperAndStringRequestIsRequested_thenSomeDataAreRetrieved() {
     // given
 
     val observer = TestObserver<GetFlights>()
-    val request = Request(QUERY, VARIABLES)
 
     System.out.println(
-      "whenGetFlightsWithoutWrapperIsRequested_thenSomeDataAreRetrieved(): request: " +
-        gson.toJson(request)
+      "whenGetFlightsWithoutWrapperAndStringRequestIsRequested_thenSomeDataAreRetrieved(): request: " +
+        STRING_REQUEST
     )
 
     // when
 
-    service.getFlightsWithoutWrapper(request)
+    service.getFlightsWithoutWrapper(STRING_REQUEST)
       .subscribe(observer)
     observer.awaitTerminalEvent()
     observer.dispose()
@@ -269,10 +358,113 @@ class RealWorldTest {
 
     val response = observer.values()[0]
 
+    assertGetFlightsValid(response)
+  }
+
+  @Test
+  fun whenGetFlightsWithoutWrapperAndBuiltRequestIsRequested_thenSomeDataAreRetrieved() {
+    // given
+
+    val observer = TestObserver<GetFlights>()
+
     System.out.println(
-      "whenGetFlightsWithoutWrapperIsRequested_thenSomeDataAreRetrieved(): response: " +
-        gson.toJson(response)
+      "whenGetFlightsWithoutWrapperAndBuiltRequestIsRequested_thenSomeDataAreRetrieved(): request: "
+        + BUILD_REQUEST
     )
+
+    assertThat(BUILD_REQUEST.toString())
+      .isEqualTo(STRING_REQUEST.toString())
+
+    // when
+
+    service.getFlightsWithoutWrapper(BUILD_REQUEST)
+      .subscribe(observer)
+    observer.awaitTerminalEvent()
+    observer.dispose()
+
+    // then
+
+    observer.assertComplete()
+    observer.assertNoErrors()
+
+    val response = observer.values()[0]
+
+    assertGetFlightsValid(response)
+  }
+
+  @Test
+  fun whenGetFlightsWithoutWrapperAndGeneratedRequestIsRequested_thenSomeDataAreRetrieved() {
+    // given
+
+    val observer = TestObserver<GetFlights>()
+
+    System.out.println(
+      "whenGetFlightsWithoutWrapperAndGeneratedRequestIsRequested_thenSomeDataAreRetrieved(): request: "
+        + GENERATED_REQUEST
+    )
+
+    assertThat(GENERATED_REQUEST.toString())
+      .isEqualTo(STRING_REQUEST.toString())
+    assertThat(GENERATED_REQUEST.toString())
+      .isEqualTo(BUILD_REQUEST.toString())
+
+    // when
+
+    service.getFlightsWithoutWrapper(GENERATED_REQUEST)
+      .subscribe(observer)
+    observer.awaitTerminalEvent()
+    observer.dispose()
+
+    // then
+
+    observer.assertComplete()
+    observer.assertNoErrors()
+
+    val response = observer.values()[0]
+
+    assertGetFlightsValid(response)
+  }
+
+  @Test
+  @Ignore
+  fun whenGetFlightsWithoutWrapperWithoutRequestIsRequested_thenSomeDataAreRetrieved() {
+    // given
+
+    val observer = TestObserver<GetFlights>()
+
+    // when
+
+    service.getFlightsWithoutWrapper(GetFlightsArguments())
+      .subscribe(observer)
+    observer.awaitTerminalEvent()
+    observer.dispose()
+
+    // then
+
+    observer.assertComplete()
+    observer.assertNoErrors()
+
+    val response = observer.values()[0]
+
+    assertGetFlightsValid(response)
+  }
+
+  // endregion Public Methods
+
+  // region Private Methods
+
+  private fun assertResponseValid(response: Response<GetFlights>) {
+    assertThat(response.data)
+      .isNotNull
+    assertThat(response.invalid)
+      .isFalse()
+    assertThat(response.errors)
+      .isEmpty()
+    assertGetFlightsValid(response.data!!)
+  }
+
+  private fun assertGetFlightsValid(response: GetFlights) {
+    System.out.println("assertGetFlightsValid(): response: $response")
 
     assertThat(response.get_flights)
       .isNotNull
@@ -280,13 +472,15 @@ class RealWorldTest {
       .isNotEmpty
       .allSatisfy {
         assertThat(it.id).isNotBlank()
-        // TODO: assertThat(it.bookingToken).isNotBlank()
+        assertThat(it.bookingToken).isNotBlank()
         assertThat(it.flyFrom).isNotBlank()
         assertThat(it.flyTo).isNotBlank()
         assertThat(it.cityFrom).isNotBlank()
         assertThat(it.cityTo).isNotBlank()
       }
+    assertThat(response.get_flights.currency)
+      .isNotBlank()
   }
 
-  // endregion Public Methods
+  // endregion Private Methods
 }

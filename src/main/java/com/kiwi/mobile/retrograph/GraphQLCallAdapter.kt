@@ -1,5 +1,6 @@
 package com.kiwi.mobile.retrograph
 
+import com.kiwi.mobile.retrograph.model.*
 import com.kiwi.mobile.retrograph.rxjava.*
 
 import io.reactivex.*
@@ -15,16 +16,13 @@ import retrofit2.Response as RetrofitResponse
 
 typealias GraphQLObservable = Observable<RetrofitResponse<GraphQLResponse<Any>>>
 
-internal class GraphQLCallAdapter<R: GraphQLResponse<T>, T>(
-  private val responseType: Type?,
+internal class GraphQLCallAdapter<R>(
+  private val responseType: Type,
   private val scheduler: Scheduler?,
   private val isResult: Boolean,
   private val isBody: Boolean,
   private val isGraphQLResponse: Boolean,
-  private val isFlowable: Boolean,
-  private val isSingle: Boolean,
-  private val isMaybe: Boolean,
-  private val isCompletable: Boolean
+  private val rxType: RxType
 ):
   CallAdapter<R, Any> {
 
@@ -32,30 +30,41 @@ internal class GraphQLCallAdapter<R: GraphQLResponse<T>, T>(
 
   override fun responseType() = responseType
 
-  override fun adapt(call: Call<R>): Any {
-    val responseObservable = GraphQLCallExecuteObservable(call)
-
-    var observable: Observable<*> = when {
-      isGraphQLResponse && isBody -> BodyObservable(responseObservable)
-      isGraphQLResponse && isResult -> ResultObservable(responseObservable)
-      isGraphQLResponse -> responseObservable
-      isBody -> GraphQLBodyObservable(responseObservable as GraphQLObservable)
-      isResult -> GraphQLResultObservable(responseObservable as GraphQLObservable)
-      else -> GraphQLRetrofitResponseObservable(responseObservable as GraphQLObservable)
-    }
-
-    if (scheduler != null) {
-      observable = observable.subscribeOn(scheduler)
-    }
-
-    return when {
-      isFlowable -> observable.toFlowable(BackpressureStrategy.LATEST)
-      isSingle -> observable.singleOrError()
-      isMaybe -> observable.singleElement()
-      isCompletable -> observable.ignoreElements()
-      else -> RxJavaPlugins.onAssembly(observable)
-    }
-  }
+  override fun adapt(call: Call<R>) =
+    GraphQLCallExecuteObservable(call)
+      .adapt()
+      .applyScheduler()
+      .toTarget()
 
   // endregion Public Methods
+
+  // region Private Methods
+
+  private fun Observable<RetrofitResponse<R>>.adapt() =
+    when {
+      isGraphQLResponse && isBody -> BodyObservable(this)
+      isGraphQLResponse && isResult -> ResultObservable(this)
+      isGraphQLResponse -> this
+      isBody -> GraphQLBodyObservable(this as GraphQLObservable)
+      isResult -> GraphQLResultObservable(this as GraphQLObservable)
+      else -> GraphQLRetrofitResponseObservable(this as GraphQLObservable)
+    }
+
+  private fun Observable<*>.applyScheduler() =
+    if (scheduler != null) {
+      subscribeOn(scheduler)
+    } else {
+      this
+    }
+
+  private fun Observable<*>.toTarget(): Any =
+    when (rxType) {
+      RxType.FLOWABLE -> toFlowable(BackpressureStrategy.LATEST)
+      RxType.SINGLE -> singleOrError()
+      RxType.MAYBE -> singleElement()
+      RxType.COMPLETABLE -> ignoreElements()
+      else -> RxJavaPlugins.onAssembly(this)
+    }
+
+  // endregion Private Methods
 }
