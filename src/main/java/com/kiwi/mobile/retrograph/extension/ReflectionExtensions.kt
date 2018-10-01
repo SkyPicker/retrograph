@@ -2,6 +2,7 @@ package com.kiwi.mobile.retrograph.extension
 
 import com.google.gson.annotations.*
 import com.google.gson.reflect.*
+
 import com.kiwi.mobile.retrograph.annotation.*
 import com.kiwi.mobile.retrograph.model.*
 
@@ -13,24 +14,40 @@ import java.lang.reflect.Field
 
 // TODO: Move to trinerdis-utils.
 
+private val WRAPPER_TYPES = arrayOf(
+  Boolean::class.java,
+  java.lang.Boolean::class.java,
+  Char::class.java,
+  java.lang.Character::class.java,
+  String::class.java,
+  java.lang.String::class.java,
+  Byte::class.java,
+  java.lang.Byte::class.java,
+  Short::class.java,
+  java.lang.Short::class.java,
+  Integer::class.java,
+  java.lang.Integer::class.java,
+  Long::class.java,
+  java.lang.Long::class.java,
+  Float::class.java,
+  java.lang.Float::class.java,
+  Double::class.java,
+  java.lang.Double::class.java,
+  Unit::class.java,
+  java.lang.Void::class.java
+)
+
 /**
  * Resolve whether (this if primitive or wrapper type.
  */
 val Class<*>.isPrimitiveOrWrapper
-  get() = isPrimitive
-    || (this == Boolean::class.java)
-    || (this == Char::class.java)
-    || (this == String::class.java)
-    || (this == Byte::class.java)
-    || (this == Short::class.java)
-    || (this == Integer::class.java)
-    || (this == Long::class.java)
-    || (this == Float::class.java)
-    || (this == Double::class.java)
-    || (this == Void::class.java)
+  get() = isPrimitive || WRAPPER_TYPES.contains(this)
 
 val Class<*>.isList
   get() = List::class.java.isAssignableFrom(this)
+
+val Class<*>.ignoreNulls
+  get() = isAnnotationPresent(IgnoreNulls::class.java)
 
 val Type.rawType
   get(): Type =
@@ -111,7 +128,7 @@ val Any?.fields: Map<String, Field>
     this.javaClass.declaredFields
       .map {
         it.isAccessible = true
-        it.name to it
+        it.aliasedName to it
       }
       .toMap<String, Field>()
   } else {

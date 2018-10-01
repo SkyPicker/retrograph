@@ -47,17 +47,22 @@ class Values<TParent>(
         values.add(it)
       }
 
+  // TODO: Not duplicate this algorithm in Arguments.
   fun valuesOf(instance: Any?) =
     apply {
+      val ignoreNulls = instance?.javaClass?.ignoreNulls ?: false
+
       instance.fields
-        .filter { !it.value.isTransient }
-        //.filter { it.value.isPublic }
+        .filter { !it.value.isTransient && !it.value.isStatic }
+        .filter { !it.value.name.endsWith("\$delegate") }
         .forEach {
           val (name, field) = it
           val value = field.get(instance)
           when {
             value == null ->
-              value(name, null)
+              if (!ignoreNulls) {
+                value(name, null)
+              }
             field.type.isPrimitiveOrWrapper ->
               value(name, value)
             field.type.isEnum ->

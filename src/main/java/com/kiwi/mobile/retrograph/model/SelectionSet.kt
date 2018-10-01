@@ -49,8 +49,8 @@ class SelectionSet<TParent>(
       val argumentsFields = arguments.fields
 
       clazz.declaredFields
-        .filter { !it.isTransient }
-        //.filter { it.isPublic }
+        .filter { !it.isTransient && !it.isStatic }
+        .filter { !it.name.endsWith("\$delegate")}
         .map {
           val field = when {
             it.type.isPrimitiveOrWrapper ->
