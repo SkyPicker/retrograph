@@ -4,7 +4,7 @@ import java.io.*
 
 class Request(
   var query: String,
-  var variables: String
+  var variables: Map<String, String>
 ):
   Serializable {
 

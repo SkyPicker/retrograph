@@ -32,7 +32,7 @@ class RequestBuilderTest {
     assertThat(request.query)
       .isEqualTo("query {  }")
     assertThat(request.variables)
-      .isEqualTo("{}")
+      .isEmpty()
   }
 
   @Test
@@ -45,7 +45,7 @@ class RequestBuilderTest {
     assertThat(request.query)
       .isEqualTo("subscription {  }")
     assertThat(request.variables)
-      .isEqualTo("{}")
+      .isEmpty()
   }
 
   @Test
@@ -58,7 +58,7 @@ class RequestBuilderTest {
     assertThat(request.query)
       .isEqualTo("mutation {  }")
     assertThat(request.variables)
-      .isEqualTo("{}")
+      .isEmpty()
   }
 
   @Test
@@ -71,7 +71,7 @@ class RequestBuilderTest {
     assertThat(request.query)
       .isEqualTo("query {  }")
     assertThat(request.variables)
-      .isEqualTo("{}")
+      .isEmpty()
   }
 
   @Test
@@ -84,7 +84,7 @@ class RequestBuilderTest {
     assertThat(request.query)
       .isEqualTo("query test {  }")
     assertThat(request.variables)
-      .isEqualTo("{}")
+      .isEmpty()
   }
 
   @Test
@@ -101,8 +101,13 @@ class RequestBuilderTest {
     assertThat(request.query)
       .isEqualTo("query {  }")
     assertThat(request.variables)
-      .isEqualTo(
-        """{"int":123456,"long":123456789123456789,"float":2.5,"double":33.3,"boolean":true,"object":{"first":"a","second":"b"}}"""
+      .contains(
+        entry("int", "123456"),
+        entry("long", "123456789123456789"),
+        entry("float", "2.5"),
+        entry("double", "33.3"),
+        entry("boolean", "true"),
+        entry("object", """{"first":"a","second":"b"}""")
       )
   }
 
@@ -162,9 +167,8 @@ class RequestBuilderTest {
         // @formatter:on
       )
     assertThat(request.variables)
-      .isEqualTo("{}")
+      .isEmpty()
   }
 
   // endregion Public Methods
-
 }

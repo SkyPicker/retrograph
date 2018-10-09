@@ -116,7 +116,7 @@ class RealWorldTest {
     "}"
     // @formatter:on
 
-    const val VARIABLES = "{}"
+    val VARIABLES = mapOf<String, String>()
 
     val STRING_REQUEST = Request(QUERY, VARIABLES)
 

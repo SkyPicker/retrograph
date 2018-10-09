@@ -76,7 +76,7 @@ open class RequestBuilder {
   fun build() =
     Request(
       buildQueryString(),
-      buildVariablesString()
+      buildVariables()
     )
 
   // endregion Public Methods
@@ -91,7 +91,11 @@ open class RequestBuilder {
   /**
    * Build a string from variables.
    */
-  private fun buildVariablesString() = gson.toJson(variables)
+  private fun buildVariables() = variables
+    .map {
+      it.key to gson.toJson(it.value)
+    }
+    .toMap()
 
   // endregion Private Methods
 }
