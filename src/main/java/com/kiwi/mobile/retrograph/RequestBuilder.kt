@@ -1,7 +1,10 @@
 package com.kiwi.mobile.retrograph
 
 import com.google.gson.*
+
 import com.kiwi.mobile.retrograph.model.*
+
+import kotlin.reflect.*
 
 /**
  * Builder for creating GraphQL request.
@@ -99,3 +102,13 @@ open class RequestBuilder {
 
   // endregion Private Methods
 }
+
+fun <T: Any> KClass<T>.request(
+  arguments: Any? = null,
+  operation: Operation.Type = Operation.Type.QUERY
+) =
+  RequestBuilder()
+    .operation(operation)
+    .fieldsOf(this, arguments)
+    .finish()
+    .build()
