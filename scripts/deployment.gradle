@@ -33,6 +33,8 @@ ext.publishLibrary = { _groupId, _artifactId, _version ->
         groupId = _groupId
         artifactId = _artifactId
         version = _version
+
+        from components.java
       }
     }
   }
