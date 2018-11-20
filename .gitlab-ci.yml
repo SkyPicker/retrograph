@@ -130,13 +130,13 @@ sonar-scanner-branch:
 
   dependencies: [test]
 
-uploadArchives:
+publish:
   stage: deploy
 
   <<: *default_definition
 
   script:
-    - ./gradlew uploadArchives
+    - ./gradlew publish
 
   dependencies: [assemble, test]
 
