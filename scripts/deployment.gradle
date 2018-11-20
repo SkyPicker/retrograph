@@ -1,0 +1,39 @@
+def gitLabRepositoryUrl = "https://gitlab.skypicker.com/api/v4/projects/301/packages/maven"
+
+ext.kiwi = { handler ->
+  handler.maven {
+    url = gitLabRepositoryUrl
+    credentials(HttpHeaderCredentials) {
+      name = "Private-Token"
+      value = System.getenv("DEPLOYMENT_TOKEN")
+    }
+    authentication {
+      header(HttpHeaderAuthentication)
+    }
+  }
+}
+
+ext.publishLibrary = { _groupId, _artifactId, _version ->
+  publishing {
+    repositories {
+      maven {
+        url = gitLabRepositoryUrl
+        credentials(HttpHeaderCredentials) {
+          name = "Private-Token"
+          value = System.getenv("DEPLOYMENT_TOKEN")
+        }
+        authentication {
+          header(HttpHeaderAuthentication)
+        }
+      }
+    }
+
+    publications {
+      library(MavenPublication) {
+        groupId = _groupId
+        artifactId = _artifactId
+        version = _version
+      }
+    }
+  }
+}
