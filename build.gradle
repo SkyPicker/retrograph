@@ -40,7 +40,7 @@ dependencies {
 
   testImplementation("com.squareup.okhttp3:mockwebserver:$okhttpVersion")
 
-  testImplementation("junit:junit:4.12")
+  testImplementation("junit:junit:$junitVersion")
   testImplementation("io.mockk:mockk:$mockkVersion")
   testImplementation("org.assertj:assertj-core:3.10.0")
   testImplementation("com.google.guava:guava:22.0")

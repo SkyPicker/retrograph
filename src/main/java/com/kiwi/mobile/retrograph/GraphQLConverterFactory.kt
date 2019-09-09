@@ -32,18 +32,20 @@ class GraphQLConverterFactory:
     Converter<ResponseBody, T> {
 
     @Throws(IOException::class)
-    override fun convert(responseBody: ResponseBody): T =
-      with(converter.convert(responseBody)) {
-        if (errors.isNotEmpty()) {
-          throw GraphQLException(this)
-        }
+    override fun convert(responseBody: ResponseBody): T {
+      val response = converter.convert(responseBody)
+        ?: throw IOException("Response is null")
 
-        if (data == null) {
-          throw GraphQLException(this)
-        }
-
-        return data
+      if (response.errors.isNotEmpty()) {
+        throw GraphQLException(response)
       }
+
+      if (response.data == null) {
+        throw GraphQLException(response)
+      }
+
+      return response.data
+    }
   }
 
   // endregion Private Types

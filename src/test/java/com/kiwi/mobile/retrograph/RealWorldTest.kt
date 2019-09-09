@@ -7,7 +7,7 @@ import com.kiwi.mobile.retrograph.annotation.Arguments
 import com.kiwi.mobile.retrograph.model.Request
 import com.kiwi.mobile.retrograph.model.Response
 
-import io.reactivex.*
+import io.reactivex.Observable
 import io.reactivex.observers.*
 
 import okhttp3.*
@@ -20,6 +20,9 @@ import org.junit.*
 import retrofit2.*
 import retrofit2.converter.gson.*
 import retrofit2.http.*
+
+import java.text.*
+import java.util.*
 
 import java.util.concurrent.*
 
@@ -66,7 +69,9 @@ class RealWorldTest {
     data class Parameters(
       val dateFrom: String = DATE_FROM,
       val dateTo: String = DATE_TO,
-      val flyFrom: String = FLY_FROM
+      val flyFrom: String = FLY_FROM,
+      val v: Int = 3,
+      val partner: String = "skypicker"
     )
 
     data class Pagination(
@@ -81,8 +86,10 @@ class RealWorldTest {
 
   private companion object {
 
-    const val DATE_FROM = "10/09/2018"
-    const val DATE_TO = "10/10/2019"
+    val DATE_FROM = SimpleDateFormat("dd/MM/YYYY")
+      .format(Date())
+    val DATE_TO = SimpleDateFormat("dd/MM/YYYY")
+      .format(Date())
     const val FLY_FROM = "london_gb"
     const val LIMIT = 20
     const val OFFSET = 0
@@ -94,7 +101,9 @@ class RealWorldTest {
         "parameters: { " +
           "dateFrom: \"$DATE_FROM\", " +
           "dateTo: \"$DATE_TO\", " +
-          "flyFrom: \"$FLY_FROM\" " +
+          "flyFrom: \"$FLY_FROM\", " +
+          "v: 3, " +
+          "partner: \"skypicker\" " +
         "}, " +
         "pagination: { " +
           "limit: $LIMIT, " +
@@ -129,6 +138,8 @@ class RealWorldTest {
             .value("dateFrom", DATE_FROM)
             .value("dateTo", DATE_TO)
             .value("flyFrom", FLY_FROM)
+            .value("v", 3)
+            .value("partner", "skypicker")
             .finish()
           .objectArgument("pagination")
             .value("limit", LIMIT)
@@ -198,7 +209,7 @@ class RealWorldTest {
     gson = GsonBuilder()
       .create()
     retrofit = Retrofit.Builder()
-      .baseUrl("https://r-dev-umbrella.skypicker.com/")
+      .baseUrl("https://api.skypicker.com/umbrella/")
       .client(
         OkHttpClient.Builder()
           .connectTimeout(20, TimeUnit.SECONDS)
@@ -224,7 +235,7 @@ class RealWorldTest {
     val observer = TestObserver<Response<GetFlights>>()
 
     System.out.println(
-      "whenGetFlightsWithWrapperAndStringRequestIsRequested_thenSomeDataAreRetrieved(): request: "
+      "whenSearchWithString_thenSomeDataAreRetrieved(): request: "
         + STRING_REQUEST
     )
 
