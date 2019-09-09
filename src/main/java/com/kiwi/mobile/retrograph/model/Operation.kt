@@ -41,13 +41,19 @@ class Operation(
   fun objectField(name: String, alias: String = "") =
     selectionSet.objectField(name, alias)
 
-  fun fieldsOf(clazz: Class<*>, arguments: Any? = null) =
-    selectionSet.fieldsOf(clazz, arguments)
+  fun inlineFragment(name: String) =
+    selectionSet.inlineFragment(name)
+
+  fun fieldsOf(`class`: Class<*>, arguments: Any? = null) =
+    selectionSet.fieldsOf(`class`, arguments)
       .finish()
 
-  fun fieldsOf(clazz: KClass<*>, arguments: Any? = null) =
-    selectionSet.fieldsOf(clazz, arguments)
+  fun fieldsOf(`class`: KClass<*>, arguments: Any? = null) =
+    selectionSet.fieldsOf(`class`, arguments)
       .finish()
+
+  inline fun <reified T> fieldsOf(arguments: Any? = null) =
+    fieldsOf(T::class, arguments)
 
   // NOTE: For now, nothing can be done after [Operation] is finished so finish also [Document].
   fun finish() = parent.finish()

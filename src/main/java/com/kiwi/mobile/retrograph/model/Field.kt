@@ -36,13 +36,19 @@ class Field<TSelectionSetParent>(
   fun objectField(name: String, alias: String = "") =
     fields.objectField(name, alias)
 
-  fun fieldsOf(clazz: Class<*>): Field<TSelectionSetParent> =
-    fields.fieldsOf(clazz)
+  fun inlineFragment(name: String) =
+    fields.inlineFragment(name)
+
+  fun fieldsOf(`class`: Class<*>): Field<TSelectionSetParent> =
+    fields.fieldsOf(`class`)
       .finish()
 
-  fun fieldsOf(clazz: KClass<*>): Field<TSelectionSetParent> =
-    fields.fieldsOf(clazz)
+  fun fieldsOf(`class`: KClass<*>): Field<TSelectionSetParent> =
+    fields.fieldsOf(`class`)
       .finish()
+
+  inline fun <reified T> fieldsOf() =
+    fieldsOf(T::class)
 
   /**
    * NOTE: Until multiple selections in [SelectionSet] is supported there is no need to continue

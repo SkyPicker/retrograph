@@ -1,5 +1,7 @@
 package com.kiwi.mobile.retrograph.model
 
+import com.kiwi.mobile.retrograph.annotation.*
+
 import io.mockk.*
 import io.mockk.impl.annotations.*
 
@@ -84,6 +86,8 @@ class OperationTest {
     val name: String = "test"
   )
 
+  class Bar
+
   @Suppress("unused")
   class Generic<T>(
     val value: T
@@ -113,6 +117,19 @@ class OperationTest {
     val objectList: List<Foo>,
     val intArray: Array<Int>,
     val enumArray: Array<Enum>,
+    val objectArray: Array<Foo>
+  )
+
+  @Suppress("unused")
+  class InlineFragmentFields<T>(
+
+    @field:InlineFragment
+    val `object`: Foo,
+
+    @field:InlineFragment
+    val objectList: List<Foo>,
+
+    @field:InlineFragment
     val objectArray: Array<Foo>
   )
 
@@ -241,11 +258,34 @@ class OperationTest {
   }
 
   @Test
-  fun whenPrimitiveFieldsOfObject_thenSerialized() {
+  fun whenHasInlineFragment_thenSerialized() {
     // given
 
     val operation = Operation(mockParent)
-      .fieldsOf(PrimitiveFields::class.java)
+      .inlineFragment("Foo")
+      .objectField("b")
+      .field("c")
+      .finish()
+      .finish()
+
+    // when
+
+    val serialized = operation.toString()
+
+    // then
+
+    assertThat(operation)
+      .isInstanceOf(Operation::class.java)
+    assertThat(serialized)
+      .isEqualTo("query { ... on Foo { b { c } } }")
+  }
+
+  @Test
+  fun whenPrimitiveFieldsOf_thenSerialized() {
+    // given
+
+    val operation = Operation(mockParent)
+      .fieldsOf<PrimitiveFields<Foo>>()
 
     // when
 
@@ -272,11 +312,11 @@ class OperationTest {
   }
 
   @Test
-  fun whenObjectFieldsOfObject_thenSerialized() {
+  fun whenObjectFieldsOf_thenSerialized() {
     // given
 
     val operation = Operation(mockParent)
-      .fieldsOf(ObjectFields::class.java)
+      .fieldsOf<ObjectFields>()
 
     // when
 
@@ -348,11 +388,11 @@ class OperationTest {
   }
 
   @Test
-  fun whenCollectionFieldsOfObject_thenSerialized() {
+  fun whenCollectionFieldsOf_thenSerialized() {
     // given
 
     val operation = Operation(mockParent)
-      .fieldsOf(CollectionFields::class.java)
+      .fieldsOf<CollectionFields<Foo>>()
 
     // when
 
@@ -382,11 +422,50 @@ class OperationTest {
   }
 
   @Test
-  fun whenArgumentFieldsOfObject_thenSerialized() {
+  fun whenInlineFragmentFieldsOf_thenSerialized() {
     // given
 
     val operation = Operation(mockParent)
-      .fieldsOf(ArgumentFields::class.java, ArgumentFieldsArguments())
+      .fieldsOf<InlineFragmentFields<Foo>>()
+
+    // when
+
+    val serialized = operation.toString()
+
+    // then
+
+    assertThat(operation)
+      .isInstanceOf(Operation::class.java)
+    assertThat(serialized)
+      .isEqualTo(
+        // @formatter:off
+        "query { " +
+          "object { " +
+            "... on Foo { " +
+              "name " +
+            "} " +
+          "}, " +
+          "objectList { " +
+            "... on Foo { " +
+              "name " +
+            "} " +
+          "}, " +
+          "objectArray { " +
+            "... on Foo { " +
+              "name " +
+            "} " +
+          "} " +
+        "}"
+        // @formatter:on
+      )
+  }
+
+  @Test
+  fun whenArgumentFieldsOf_thenSerialized() {
+    // given
+
+    val operation = Operation(mockParent)
+      .fieldsOf<ArgumentFields<Foo>>(ArgumentFieldsArguments())
 
     // when
 

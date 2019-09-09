@@ -46,7 +46,7 @@ val Class<*>.isPrimitiveOrWrapper
 val Class<*>.isList
   get() = List::class.java.isAssignableFrom(this)
 
-val Class<*>.ignoreNulls
+val Class<*>.hasIgnoreNulls
   get() = isAnnotationPresent(IgnoreNulls::class.java)
 
 val Type.rawType
@@ -128,7 +128,7 @@ val Any?.fields: Map<String, Field>
     this.javaClass.declaredFields
       .map {
         it.isAccessible = true
-        it.aliasedName to it
+        it.aliasOrName to it
       }
       .toMap<String, Field>()
   } else {
@@ -174,7 +174,7 @@ val Field.isStrict
 val Field.parameterUpperBound
   get() = when {
     type.isArray -> type.componentType
-    else -> genericType.parameterUpperBound as? Class<*>
+    else -> genericType.parameterUpperBound as? Class<*> ?: Any::class.java
   }
 
 val Field.serializedName
@@ -183,8 +183,11 @@ val Field.serializedName
 val Field.alias
   get() = getAnnotation(Alias::class.java)?.name
 
-val Field.aliasedName
+val Field.aliasOrName
   get() = alias ?: name
 
-val Field.aliasOrEmpty
+val Field.nameOrEmpty
   get() = if (getAnnotation(Alias::class.java) != null) name else ""
+
+val Field.hasInlineFragment
+  get() = isAnnotationPresent(InlineFragment::class.java)

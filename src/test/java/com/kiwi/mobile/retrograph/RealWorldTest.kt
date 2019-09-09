@@ -87,9 +87,17 @@ class RealWorldTest {
   private companion object {
 
     val DATE_FROM = SimpleDateFormat("dd/MM/YYYY")
-      .format(Date())
+      .format(
+        Date()
+          .apply { date += 10 }
+      )
+
     val DATE_TO = SimpleDateFormat("dd/MM/YYYY")
-      .format(Date())
+      .format(
+        Date()
+          .apply { date += 20 }
+      )
+
     const val FLY_FROM = "london_gb"
     const val LIMIT = 20
     const val OFFSET = 0
@@ -166,7 +174,7 @@ class RealWorldTest {
 
     val GENERATED_REQUEST = RequestBuilder()
       .operation()
-      .fieldsOf(GetFlights::class.java, GetFlightsArguments())
+      .fieldsOf<GetFlights>(GetFlightsArguments())
       .finish()
       .build()
   }

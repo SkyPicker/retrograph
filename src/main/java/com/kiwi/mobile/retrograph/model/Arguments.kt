@@ -44,7 +44,7 @@ class Arguments<TSelectionSetParent>(
   // TODO: Not duplicate this algorithm in Values.
   fun argumentsOf(instance: Any?) =
     apply {
-      val ignoreNulls = instance?.javaClass?.ignoreNulls ?: false
+      val ignoreNulls = instance?.javaClass?.hasIgnoreNulls ?: false
 
       instance.fields
         .filter { !it.value.isTransient && !it.value.isStatic }
@@ -63,7 +63,7 @@ class Arguments<TSelectionSetParent>(
               argument(name, value)
             field.type.isArray -> {
               val array = value as Array<*>
-              val componentType = field.parameterUpperBound!!
+              val componentType = field.parameterUpperBound
               if (componentType.isPrimitiveOrWrapper || componentType.isEnum) {
                 listArgument(name)
                   .values(*array)
@@ -82,7 +82,7 @@ class Arguments<TSelectionSetParent>(
             }
             field.type.isList -> {
               val array = (value as List<*>).toTypedArray()
-              val componentType = field.parameterUpperBound!!
+              val componentType = field.parameterUpperBound
               if (componentType.isPrimitiveOrWrapper || componentType.isEnum) {
                 listArgument(name)
                   .values(*array)

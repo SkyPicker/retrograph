@@ -4,6 +4,8 @@ import com.kiwi.mobile.retrograph.extension.*
 
 import kotlin.reflect.*
 
+import java.lang.reflect.Field as JavaField
+
 /**
  * Class representing selection set.
  *
@@ -44,68 +46,93 @@ class SelectionSet<TParent>(
         fields.add(it)
       }
 
-  fun fieldsOf(clazz: Class<*>, arguments: Any? = null) =
+  fun inlineFragment(name: String) =
+    Field(this, "... on $name")
+      .also {
+        fields.add(it)
+      }
+
+  fun fieldsOf(`class`: Class<*>, arguments: Any? = null) =
     apply {
-      val argumentsFields = arguments.fields
-
-      clazz.declaredFields
-        .filter { !it.isTransient && !it.isStatic }
-        .filter { !it.name.endsWith("\$delegate")}
-        .map {
-          val field = when {
-            it.type.isPrimitiveOrWrapper ->
-              field(it.aliasedName, it.aliasOrEmpty)
-            it.type.isEnum ->
-              field(it.aliasedName, it.aliasOrEmpty)
-            it.type.isArray -> {
-              val componentType = it.parameterUpperBound!!
-              if (componentType.isPrimitiveOrWrapper || componentType.isEnum) {
-                field(it.aliasedName, it.aliasOrEmpty)
-              } else {
-                objectField(it.aliasedName, it.aliasOrEmpty)
-                  .fieldsOf(componentType)
-              }
-            }
-            it.type.isList -> {
-              val componentType = it.parameterUpperBound!!
-              if (componentType.isPrimitiveOrWrapper || componentType.isEnum) {
-                field(it.aliasedName, it.aliasOrEmpty)
-              } else {
-                objectField(it.aliasedName, it.aliasOrEmpty)
-                  .fieldsOf(componentType)
-              }
-            }
-            else ->
-              objectField(it.aliasedName, it.aliasOrEmpty)
-                .fieldsOf(it.type)
-          }
-
-          if (argumentsFields.containsKey(it.name)) {
-            field.argumentsOf(argumentsFields[it.name]?.get(arguments))
-          }
-
-          parent
+      `class`.declaredFields
+        .filter(isInstanceField)
+        .filter(isNotDelegate)
+        .map { javaField ->
+          run { resolveField(javaField) }
+            .run { resolveArguments(javaField, arguments) }
         }
     }
 
-  fun fieldsOf(clazz: KClass<*>, arguments: Any? = null) =
-    apply {
-      clazz.members
-        .filter { it is KProperty }
-        .filter { it.visibility == KVisibility.PUBLIC }
-        .map {
-          // TODO: Generate rquest using Kotlin reflection.
-          when (it.returnType) {
-            Boolean::class ->
-              field(it.name)
-          }
-          parent
-        }
-    }
+  fun fieldsOf(`class`: KClass<*>, arguments: Any? = null) =
+    fieldsOf(`class`.java, arguments)
+
+  inline fun <reified T> fieldsOf(arguments: Any? = null) =
+    fieldsOf(T::class, arguments)
 
   fun finish() = parent
 
   override fun toString() = fields.joinToString(separator = ", ")
 
   // endregion Public Methods
+
+  // region Private Methods
+
+  private val isInstanceField = { javaField: JavaField ->
+    !javaField.isTransient && !javaField.isStatic
+  }
+
+  private val isNotDelegate = { javaField: JavaField ->
+    !javaField.name.endsWith("\$delegate")
+  }
+
+  private fun <T> SelectionSet<T>.resolveField(javaField: JavaField) =
+    when {
+      javaField.hasInlineFragment && javaField.type.isList ->
+        objectField(javaField.aliasOrName, javaField.nameOrEmpty)
+          .inlineFragment(javaField.parameterUpperBound.simpleName)
+          .fieldsOf(javaField.parameterUpperBound)
+      javaField.hasInlineFragment && javaField.type.isArray -> {
+        objectField(javaField.aliasOrName, javaField.nameOrEmpty)
+          .inlineFragment(javaField.parameterUpperBound.simpleName)
+          .fieldsOf(javaField.parameterUpperBound)
+      }
+      javaField.hasInlineFragment ->
+        objectField(javaField.aliasOrName, javaField.nameOrEmpty)
+          .inlineFragment(javaField.type.simpleName)
+          .fieldsOf(javaField.type)
+      javaField.type.isPrimitiveOrWrapper ->
+        field(javaField.aliasOrName, javaField.nameOrEmpty)
+      javaField.type.isEnum ->
+        field(javaField.aliasOrName, javaField.nameOrEmpty)
+      javaField.type.isArray -> {
+        val componentType = javaField.parameterUpperBound
+        if (componentType.isPrimitiveOrWrapper || componentType.isEnum) {
+          field(javaField.aliasOrName, javaField.nameOrEmpty)
+        } else {
+          objectField(javaField.aliasOrName, javaField.nameOrEmpty)
+            .fieldsOf(componentType)
+        }
+      }
+      javaField.type.isList -> {
+        val componentType = javaField.parameterUpperBound
+        if (componentType.isPrimitiveOrWrapper || componentType.isEnum) {
+          field(javaField.aliasOrName, javaField.nameOrEmpty)
+        } else {
+          objectField(javaField.aliasOrName, javaField.nameOrEmpty)
+            .fieldsOf(componentType)
+        }
+      }
+      else ->
+        objectField(javaField.aliasOrName, javaField.nameOrEmpty)
+          .fieldsOf(javaField.type)
+    }
+
+  private fun <T> Field<T>.resolveArguments(javaField: JavaField, arguments: Any?) =
+    if (arguments.fields.containsKey(javaField.name)) {
+      argumentsOf(arguments.fields[javaField.name]?.get(arguments))
+    } else {
+      this
+    }
+
+  // endregion Private Methods
 }
