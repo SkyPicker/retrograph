@@ -1,13 +1,13 @@
 ext {
-  retrographVersion = "0.4-SNAPSHOT"
+  retrographVersion = "0.5-SNAPSHOT"
 
   if (!hasProperty("gradlePluginVersion")) ext.gradlePluginVersion = "3.5.0"
-  if (!hasProperty("kotlinVersion")) kotlinVersion = "1.3.41"
+  if (!hasProperty("kotlinVersion")) kotlinVersion = "1.3.50"
 
   if (!hasProperty("gsonVersion")) gsonVersion = "2.8.5"
-  if (!hasProperty("retrofitVersion")) retrofitVersion = "2.5.0"
-  if (!hasProperty("rxJavaVersion")) rxJavaVersion = "2.2.0"
-  if (!hasProperty("okhttpVersion")) okhttpVersion = "3.14.2"
+  if (!hasProperty("retrofitVersion")) retrofitVersion = "2.6.1"
+  if (!hasProperty("rxJavaVersion")) rxJavaVersion = "2.2.12"
+  if (!hasProperty("okhttpVersion")) okhttpVersion = "4.2.0"
   if (!hasProperty("timberVersion")) timberVersion = "4.7.1"
 
   junitVersion = "4.12"
@@ -15,5 +15,5 @@ ext {
   spekVersion = "1.1.5"
   mockkVersion = "1.9.3"
 
-  if (!hasProperty("jacocoVersion")) jacocoVersion = "0.8.3"
+  if (!hasProperty("jacocoVersion")) jacocoVersion = "0.8.4"
 }

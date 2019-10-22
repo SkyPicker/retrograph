@@ -1,6 +1,7 @@
 package com.kiwi.mobile.retrograph.converter
 
 import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 
 import retrofit2.*
 
@@ -22,6 +23,7 @@ class StringConverterFactory: Converter.Factory() {
     retrofit: Retrofit
   ) =
     Converter<String, RequestBody> { value ->
-      RequestBody.create(MediaType.parse("text/plain"), value)
+      "text/plain".toMediaTypeOrNull()
+        ?.let { RequestBody.create(it, value) }
     }
 }
