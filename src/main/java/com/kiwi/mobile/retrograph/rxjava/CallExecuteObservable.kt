@@ -67,6 +67,8 @@ internal class CallExecuteObservable<R>(
           Exceptions.throwIfFatal(inner)
           RxJavaPlugins.onError(CompositeException(throwable, inner))
         }
+      } else {
+        // nothing
       }
     }
   }

@@ -7,9 +7,8 @@ import com.kiwi.mobile.retrograph.*
  *
  * TODO: Multiple Definitions?
  * TODO: FragmentDefinition?
- * TODO: Make this not open class.
  */
-open class Document(
+class Document(
   val parent: RequestBuilder
 ) {
 

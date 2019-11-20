@@ -104,16 +104,7 @@ class SelectionSet<TParent>(
         field(javaField.aliasOrName, javaField.nameOrEmpty)
       javaField.type.isEnum ->
         field(javaField.aliasOrName, javaField.nameOrEmpty)
-      javaField.type.isArray -> {
-        val componentType = javaField.parameterUpperBound
-        if (componentType.isPrimitiveOrWrapper || componentType.isEnum) {
-          field(javaField.aliasOrName, javaField.nameOrEmpty)
-        } else {
-          objectField(javaField.aliasOrName, javaField.nameOrEmpty)
-            .fieldsOf(componentType)
-        }
-      }
-      javaField.type.isList -> {
+      javaField.type.isList || javaField.type.isArray -> {
         val componentType = javaField.parameterUpperBound
         if (componentType.isPrimitiveOrWrapper || componentType.isEnum) {
           field(javaField.aliasOrName, javaField.nameOrEmpty)

@@ -16,6 +16,7 @@ import retrofit2.Response as RetrofitResponse
 
 typealias GraphQLObservable = Observable<RetrofitResponse<GraphQLResponse<Any>>>
 
+@Suppress("UNCHECKED_CAST")
 internal class GraphQLCallAdapter<R>(
   private val responseType: Type,
   private val scheduler: Scheduler?,
@@ -40,6 +41,7 @@ internal class GraphQLCallAdapter<R>(
 
   // region Private Methods
 
+  @SuppressWarnings("unchecked")
   private fun Observable<RetrofitResponse<R>>.adapt() =
     when {
       isGraphQLResponse && isBody -> BodyObservable(this)

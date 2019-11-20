@@ -51,6 +51,8 @@ internal class CallEnqueueObservable<T>(
             Exceptions.throwIfFatal(inner)
             RxJavaPlugins.onError(CompositeException(throwable, inner))
           }
+        } else {
+          // nothing
         }
       }
     }

@@ -157,7 +157,8 @@ class GraphQLCallAdapterFactory private constructor(
 
   private fun throwResponseResponseMustBeParametrized() {
     throw IllegalStateException(
-      "Response must be parameterized as Response<Response<Foo>> or Response<Response<? extends Foo>>"
+      "Response must be parameterized as Response<Response<Foo>> or " +
+        "Response<Response<? extends Foo>>"
     )
   }
 

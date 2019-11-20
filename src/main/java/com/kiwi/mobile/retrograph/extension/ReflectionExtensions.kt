@@ -12,8 +12,6 @@ import java.lang.reflect.*
 import java.lang.reflect.Array
 import java.lang.reflect.Field
 
-// TODO: Move to trinerdis-utils.
-
 private val WRAPPER_TYPES = arrayOf(
   Boolean::class.java,
   java.lang.Boolean::class.java,
