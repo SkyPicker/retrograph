@@ -5,12 +5,38 @@ stages:
   - deploy
 
 variables:
-  SOURCES_PATH: "src/main/java"
-  TESTS_PATH: "src/test/java"
   BINARIES_PATH: "build/classes"
-  JACOCO_EXEC_FILE : "build/jacoco/test.exec"
+  JACOCO_PATH: "build/jacoco/test.exec"
+  REPORTS_PATH: "build/reports"
 
-.default_template: &default_definition
+# region Pipeline Definitions
+
+.normalPipeline: &normalPipeline
+  tags: [high-performance]
+  except:
+    refs:
+      - schedules
+    variables:
+      - $GITLAB_USER_NAME == 'svc.jira'
+
+.featureBranchPipeline: &featureBranchPipeline
+  tags: [high-performance]
+  except:
+    refs:
+      - master
+      - schedules
+    variables:
+      - $GITLAB_USER_NAME == 'svc.jira'
+
+.postMergePipeline: &postMergePipeline
+  <<: *normalPipeline
+  only:
+    refs:
+      - master
+
+# endregion Pipeline Definitions
+
+.default:
   image: jangrewe/gitlab-ci-android
 
   variables:
@@ -46,38 +72,74 @@ variables:
     paths:
       - $CHACHE_DIR
 
-# SONARQUBE TEMPLATE
+# region SonarQube
 
-.sonarqube_template: &sonarqube_definition
-  image: openjdk:8-jre-alpine
+.sonarqube:
+  image: kiwicom/sonar-scanner:3.2.0
 
   variables:
-    SONAR_SCANNER_VERSION: "3.0.3.778"
-    SONAR_SCANNER_ARGS: >
-      -Dsonar.host.url=$SONARQUBE_URL
-      -Dsonar.login=$SONARQUBE_TOKEN
-      -Dsonar.projectKey=$CI_PROJECT_NAMESPACE:$CI_PROJECT_NAME
-      -Dsonar.projectVersion=$CI_JOB_ID
-      -Dsonar.sources=$SOURCES_PATH
-      -Dsonar.tests=$TESTS_PATH
-      -Dsonar.java.binaries=$BINARIES_PATH
+    SONAR_ARGUMENTS: "
+      -Dsonar.gitlab.comment_no_issue=true
+      -Dsonar.gitlab.disable_inline_comments=true
+      -Dsonar.gitlab.disable_global_comment=false
+      -Dsonar.gitlab.quality_gate_fail_mode=warn
+      -Dsonar.import_unknown_files=false
       -Dsonar.java.coveragePlugin=jacoco
-      -Dsonar.jacoco.reportPaths=$JACOCO_EXEC_FILE
+      "
+
+  stage: quality
 
   before_script:
-    - apk add --no-cache ca-certificates wget git
-    - update-ca-certificates
-    - wget https://s3-eu-west-1.amazonaws.com/kiwi-ci/sonar-scanner-cli-$SONAR_SCANNER_VERSION.zip
-    - unzip sonar-scanner-cli-$SONAR_SCANNER_VERSION.zip
+    - export SONAR_SOURCES="src/main" && echo $SONAR_SOURCES
+    - export SONAR_TESTS="src/test/" && echo $SONAR_TESTS
+    - export SONAR_JAVA_BINARIES="build/classes/java/main/,build/classes/kotlin/main/" && echo $SONAR_JAVA_BINARIES
+    - export SONAR_JAVA_TEST_BINARIES="build/classes/java/test/,build/classes/kotlin/test/" && echo $SONAR_JAVA_TEST_BINARIES
+    - export SONAR_JAVA_LIBRARIES="libs/" && echo $SONAR_JAVA_LIBRARIES
+    - export SONAR_JAVA_TEST_LIBRARIES=$SONAR_JAVA_LIBRARIES && echo $SONAR_JAVA_TEST_LIBRARIES
+    - export SONAR_JUNIT_REPORT_PATHS="build/test-results/test/" && echo $SONAR_JUNIT_REPORT_PATHS
+    - export SONAR_COVERAGE_JACOCO_XML_REPORT_PATHS="build/reports/jacoco/test/jacocoTestReport.xml" && echo $SONAR_COVERAGE_JACOCO_XML_REPORT_PATHS
+    - mkdir -p "build/classes/java/main/" "build/classes/kotlin/main/" "libs/" "build/test-results/test/" "build/reports/jacoco/test/"
+    - export SONAR_DYNAMIC_ARGUMENTS="
+      -Dsonar.branch.name=$CI_COMMIT_REF_NAME
+      -Dsonar.sources=$SONAR_SOURCES
+      -Dsonar.tests=$SONAR_TESTS
+      -Dsonar.java.binaries=$SONAR_JAVA_BINARIES
+      -Dsonar.java.test.binaries=$SONAR_JAVA_TEST_BINARIES
+      -Dsonar.java.libraries=$SONAR_JAVA_LIBRARIES
+      -Dsonar.java.test.libraries=$SONAR_JAVA_TEST_LIBRARIES
+      -Dsonar.junit.reportPaths=$SONAR_JUNIT_REPORT_PATHS
+      -Dsonar.coverage.jacoco.xmlReportPaths=$SONAR_COVERAGE_JACOCO_XML_REPORT_PATHS
+      " && echo $SONAR_DYNAMIC_ARGUMENTS
+
+  cache: {}
 
   allow_failure: true
 
-# TASKS
+.sonarqube_scan:
+  extends: .sonarqube
+
+  script:
+    - echo scan $SONAR_SOURCES $SONAR_DYNAMIC_ARGUMENTS $SONAR_ARGUMENTS
+    - scan $SONAR_SOURCES $SONAR_DYNAMIC_ARGUMENTS $SONAR_ARGUMENTS
+
+.sonarqube_preview:
+  extends: .sonarqube
+
+  script:
+    - echo $CI_MERGE_REQUEST_TARGET_BRANCH
+    - preview $SONAR_SOURCES $SONAR_DYNAMIC_ARGUMENTS $SONAR_ARGUMENTS
+      -Dsonar.analysis.mode=publish
+      -Dsonar.branch.target=$CI_MERGE_REQUEST_TARGET_BRANCH
+
+# endregion SonarQube
+
+# region Jobs
 
 assemble:
-  stage: build
+  extends: .default
+  <<: *normalPipeline
 
-  <<: *default_definition
+  stage: build
 
   script:
     - ./gradlew assemble
@@ -88,10 +150,11 @@ assemble:
       - $BINARIES_PATH
     expire_in: 1 week
 
-test:
-  stage: test
+unitTest:
+  extends: .default
+  <<: *normalPipeline
 
-  <<: *default_definition
+  stage: test
 
   script:
     - ./gradlew test jacocoTestReport
@@ -101,43 +164,33 @@ test:
   artifacts:
     paths:
       - $BINARIES_PATH
-      - $JACOCO_EXEC_FILE
+      - $JACOCO_PATH
+      - $REPORTS_PATH
     expire_in: 1 week
 
-sonar-scanner:
-  stage: quality
+sonarScannerMaster:
+  extends: .sonarqube_scan
+  <<: *postMergePipeline
 
-  <<: *sonarqube_definition
-
-  only:
-    - master
-
-  script:
-    - sonar-scanner-$SONAR_SCANNER_VERSION/bin/sonar-scanner $SONAR_SCANNER_ARGS
-
-  dependencies: [test]
+  dependencies: [unitTest]
 
 sonar-scanner-branch:
-  stage: quality
+  extends: .sonarqube_preview
+  <<: *featureBranchPipeline
 
-  <<: *sonarqube_definition
-
-  except:
-    - master
-
-  script:
-    - sonar-scanner-$SONAR_SCANNER_VERSION/bin/sonar-scanner $SONAR_SCANNER_ARGS -Dsonar.branch.name=$CI_COMMIT_REF_NAME
-
-  dependencies: [test]
+  dependencies: [unitTest]
 
 publish:
-  stage: deploy
+  extends: .default
+  <<: *postMergePipeline
 
-  <<: *default_definition
+  stage: deploy
 
   script:
     - ./gradlew publish
 
-  dependencies: [assemble, test]
+  dependencies: [assemble, unitTest]
 
   when: manual
+
+# endregion Jobs
