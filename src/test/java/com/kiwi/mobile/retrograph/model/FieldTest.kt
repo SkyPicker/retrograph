@@ -110,7 +110,7 @@ class FieldTest {
     assertThat(serialized)
       .isEqualTo(
         // @formatter:off
-        "test( " +
+        "test(" +
           "int: 123, " +
           "long: 123456789, " +
           "float: 0.123, " +
@@ -130,7 +130,7 @@ class FieldTest {
             "{ " +
               "name: \"test\" " +
             "} " +
-          "] " +
+          "]" +
         ")"
         // @formatter:on
       )

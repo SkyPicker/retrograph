@@ -2,6 +2,8 @@ package com.kiwi.mobile.retrograph.model
 
 import kotlin.reflect.*
 
+import java.lang.reflect.Field as JavaField
+
 /**
  * Class representing selection field.
  */
@@ -26,12 +28,14 @@ class Field<TSelectionSetParent>(
     arguments.argumentsOf(instance)
       .finish()
 
+  fun argumentsOf(instance: Any?, arguments: Map<String, JavaField>) =
+    this.arguments.argumentsOf(instance, arguments)
+      .finish()
+
   fun fields() = fields
 
   fun field(name: String, alias: String = "") =
-    apply {
-      fields.field(name, alias)
-    }
+    fields.field(name, alias)
 
   fun objectField(name: String, alias: String = "") =
     fields.objectField(name, alias)
@@ -39,16 +43,15 @@ class Field<TSelectionSetParent>(
   fun inlineFragment(name: String) =
     fields.inlineFragment(name)
 
-  fun fieldsOf(`class`: Class<*>): Field<TSelectionSetParent> =
-    fields.fieldsOf(`class`)
+  fun fieldsOf(`class`: Class<*>, arguments: Any? = null): Field<TSelectionSetParent> =
+    fields.fieldsOf(`class`, arguments)
       .finish()
 
-  fun fieldsOf(`class`: KClass<*>): Field<TSelectionSetParent> =
-    fields.fieldsOf(`class`)
-      .finish()
+  fun fieldsOf(`class`: KClass<*>, arguments: Any? = null) =
+    fieldsOf(`class`.java, arguments)
 
-  inline fun <reified T> fieldsOf() =
-    fieldsOf(T::class)
+  inline fun <reified T> fieldsOf(arguments: Any? = null) =
+    fieldsOf(T::class, arguments)
 
   /**
    * NOTE: Until multiple selections in [SelectionSet] is supported there is no need to continue
@@ -69,7 +72,7 @@ class Field<TSelectionSetParent>(
 
   private fun buildSelectionSetString() = if (fields.isNotEmpty) " { $fields }" else ""
 
-  private fun buildArgumentsString() = if (arguments.isNotEmpty) "( $arguments )" else ""
+  private fun buildArgumentsString() = if (arguments.isNotEmpty) "($arguments)" else ""
 
   // endregion Private Methods
 }

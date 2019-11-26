@@ -14,6 +14,43 @@ class RequestBuilderTest {
     KIWI
   }
 
+  private data class Response(
+    val firstFoo: FirstLevel,
+    val firstBar: FirstLevel
+  ) {
+
+    data class FirstLevel(
+      val second: Second
+    ) {
+
+      data class Second(
+        val field: String
+      )
+    }
+  }
+
+  private data class Arguments(
+    val firstFoo: FirstLevelArguments,
+    val firstBar: FirstLevelArguments
+  ) {
+
+    data class FirstLevelArguments(
+      val firstArgument: String,
+      val second: SecondLevelArguments
+    ) {
+
+      data class SecondLevelArguments(
+        val secondArgument: String,
+        val field: FieldArguments
+      ) {
+
+        data class FieldArguments(
+          val fieldArgument: String
+        )
+      }
+    }
+  }
+
   // endregion Private Types
 
   // region Public Methods
@@ -114,7 +151,6 @@ class RequestBuilderTest {
   @Test
   fun whenExampleQueryIsCreated_thenSerialized() {
     // @formatter:off
-
     val request = RequestBuilder()
       .operation(Operation.Type.QUERY)
         .objectField("get_flights")
@@ -133,19 +169,20 @@ class RequestBuilderTest {
           .finish()
           .objectField("data")
             .field("id")
+              .finish()
             .field("price")
+              .finish()
             .finish()
           .finish()
         .finish()
       .build()
-
     // @formatter:on
 
     assertThat(request.query)
       .isEqualTo(
         // @formatter:off
         "query { " +
-          "get_flights( " +
+          "get_flights(" +
             "providers: KIWI, " +
               "parameters: { " +
               "flyFrom: \"DEN\", " +
@@ -156,7 +193,7 @@ class RequestBuilderTest {
             "pagination: { " +
               "offset: 0, " +
               "limit: 5 " +
-            "} " +
+            "}" +
           ") { " +
             "data { " +
               "id, " +
@@ -168,6 +205,54 @@ class RequestBuilderTest {
       )
     assertThat(request.variables)
       .isEmpty()
+  }
+
+  @Test
+  fun whenArgumentsArePresent_thenSerialized() {
+    val request = RequestBuilder()
+      .operation()
+      .fieldsOf<Response>(
+        Arguments(
+          firstFoo = Arguments.FirstLevelArguments(
+            firstArgument = "first foo",
+            second = Arguments.FirstLevelArguments.SecondLevelArguments(
+              secondArgument = "second foo",
+              field = Arguments.FirstLevelArguments.SecondLevelArguments.FieldArguments(
+                fieldArgument = "field foo"
+              )
+            )
+          ),
+          firstBar = Arguments.FirstLevelArguments(
+            firstArgument = "first bar",
+            second = Arguments.FirstLevelArguments.SecondLevelArguments(
+              secondArgument = "second bar",
+              field = Arguments.FirstLevelArguments.SecondLevelArguments.FieldArguments(
+                fieldArgument = "field bar"
+              )
+            )
+          )
+        )
+      )
+      .finish()
+      .build()
+
+    assertThat(request.query)
+      .isEqualTo(
+        // @formatter:off
+        "query { " +
+          "firstFoo(firstArgument: \"first foo\") { " +
+            "second(secondArgument: \"second foo\") { " +
+              "field(fieldArgument: \"field foo\") " +
+            "} " +
+          "}, " +
+          "firstBar(firstArgument: \"first bar\") { " +
+            "second(secondArgument: \"second bar\") { " +
+              "field(fieldArgument: \"field bar\") " +
+            "} " +
+          "} " +
+        "}"
+        // @formatter:on
+      )
   }
 
   // endregion Public Methods

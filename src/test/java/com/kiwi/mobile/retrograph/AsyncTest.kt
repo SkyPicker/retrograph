@@ -1,16 +1,22 @@
 package com.kiwi.mobile.retrograph
 
 import com.kiwi.mobile.retrograph.util.*
+
 import io.reactivex.*
 import io.reactivex.exceptions.*
 import io.reactivex.observers.*
 import io.reactivex.plugins.*
+
 import okhttp3.mockwebserver.*
+
 import org.assertj.core.api.Assertions.*
+
 import org.junit.*
 import org.junit.Assert.*
+
 import retrofit2.*
 import retrofit2.http.*
+
 import java.io.*
 import java.util.concurrent.*
 import java.util.concurrent.atomic.*

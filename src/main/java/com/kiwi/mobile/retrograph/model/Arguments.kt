@@ -46,9 +46,13 @@ class Arguments<TSelectionSetParent>(
   // TODO: Not duplicate this algorithm in Values.
   fun argumentsOf(instance: Any?) =
     apply {
-      instance.fields
-        .filter { !it.value.isTransient && !it.value.isStatic }
-        .filter { !it.value.name.endsWith("\$delegate") }
+      instance.serializableFields
+        .forEach { argumentsOf(instance, it.toPair()) }
+    }
+
+  fun argumentsOf(instance: Any?, arguments: Map<String, JavaField>) =
+    apply {
+      arguments
         .forEach { argumentsOf(instance, it.toPair()) }
     }
 

@@ -54,13 +54,9 @@ class SelectionSet<TParent>(
 
   fun fieldsOf(`class`: Class<*>, arguments: Any? = null) =
     apply {
-      `class`.declaredFields
-        .filter(isInstanceField)
-        .filter(isNotDelegate)
-        .map { javaField ->
-          run { resolveField(javaField) }
-            .run { resolveArguments(javaField, arguments) }
-        }
+      val argumentsFields = arguments.serializableFields
+      `class`.serializableFields
+        .forEach { resolveField(it.value, argumentsFields[it.key]?.get(arguments)) }
     }
 
   fun fieldsOf(`class`: KClass<*>, arguments: Any? = null) =
@@ -77,53 +73,49 @@ class SelectionSet<TParent>(
 
   // region Private Methods
 
-  private val isInstanceField = { javaField: JavaField ->
-    !javaField.isTransient && !javaField.isStatic
-  }
-
-  private val isNotDelegate = { javaField: JavaField ->
-    !javaField.name.endsWith("\$delegate")
-  }
-
-  private fun <T> SelectionSet<T>.resolveField(javaField: JavaField) =
+  private fun resolveField(javaField: JavaField, arguments: Any?) =
     when {
       javaField.hasInlineFragment && javaField.type.isList ->
-        objectField(javaField.aliasOrName, javaField.nameOrEmpty)
-          .inlineFragment(javaField.parameterUpperBound.simpleName)
-          .fieldsOf(javaField.parameterUpperBound)
-      javaField.hasInlineFragment && javaField.type.isArray -> {
-        objectField(javaField.aliasOrName, javaField.nameOrEmpty)
-          .inlineFragment(javaField.parameterUpperBound.simpleName)
-          .fieldsOf(javaField.parameterUpperBound)
-      }
+        objectFragmentField(javaField, javaField.parameterUpperBound, arguments)
+      javaField.hasInlineFragment && javaField.type.isArray ->
+        objectFragmentField(javaField, javaField.parameterUpperBound, arguments)
       javaField.hasInlineFragment ->
-        objectField(javaField.aliasOrName, javaField.nameOrEmpty)
-          .inlineFragment(javaField.type.simpleName)
-          .fieldsOf(javaField.type)
+        objectFragmentField(javaField, javaField.type, arguments)
       javaField.type.isPrimitiveOrWrapper ->
-        field(javaField.aliasOrName, javaField.nameOrEmpty)
+        primitiveField(javaField, arguments)
       javaField.type.isEnum ->
-        field(javaField.aliasOrName, javaField.nameOrEmpty)
+        primitiveField(javaField, arguments)
       javaField.type.isList || javaField.type.isArray -> {
         val componentType = javaField.parameterUpperBound
         if (componentType.isPrimitiveOrWrapper || componentType.isEnum) {
-          field(javaField.aliasOrName, javaField.nameOrEmpty)
+          primitiveField(javaField, arguments)
         } else {
-          objectField(javaField.aliasOrName, javaField.nameOrEmpty)
-            .fieldsOf(componentType)
+          objectField(javaField, componentType, arguments)
         }
       }
       else ->
-        objectField(javaField.aliasOrName, javaField.nameOrEmpty)
-          .fieldsOf(javaField.type)
+        objectField(javaField, javaField.type, arguments)
     }
 
-  private fun <T> Field<T>.resolveArguments(javaField: JavaField, arguments: Any?) =
-    if (arguments.fields.containsKey(javaField.name)) {
-      argumentsOf(arguments.fields[javaField.name]?.get(arguments))
-    } else {
-      this
-    }
+  private fun primitiveField(javaField: JavaField, arguments: Any?) =
+    field(javaField.aliasOrName, javaField.nameOrEmpty)
+      .argumentsOf(arguments)
+
+  private fun objectField(javaField: JavaField, type: Class<*>, arguments: Any?) =
+    objectField(javaField.aliasOrName, javaField.nameOrEmpty)
+      .fieldsOf(type, arguments)
+      .argumentsOf(arguments, arguments.remainingArguments(type))
+
+  private fun objectFragmentField(javaField: JavaField, type: Class<*>, arguments: Any?) =
+    objectField(javaField.aliasOrName, javaField.nameOrEmpty)
+      .inlineFragment(type.simpleName)
+      .fieldsOf(type, arguments)
+      .argumentsOf(arguments, arguments.remainingArguments(type))
+
+  private fun Any?.remainingArguments(type: Class<*>): Map<String, JavaField> {
+    val typeFields = type.serializableFields
+    return serializableFields.filter { !typeFields.containsKey(it.key) }
+  }
 
   // endregion Private Methods
 }

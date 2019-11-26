@@ -19,6 +19,7 @@ import okhttp3.mockwebserver.*;
 import static org.junit.Assert.*;
 
 public final class CancelDisposeTest {
+
   @Rule
   public final MockWebServer server = new MockWebServer();
 

@@ -121,17 +121,19 @@ val Type.rxType
     else -> RxType.UNKNOWN
   }
 
-val Any?.fields: Map<String, Field>
-  get() = if (this != null) {
-    this.javaClass.declaredFields
-      .map {
-        it.isAccessible = true
-        it.aliasOrName to it
-      }
-      .toMap<String, Field>()
-  } else {
-    mapOf()
-  }
+val <T: Any> Class<T>.serializableFields: Map<String, Field>
+  get() = declaredFields
+    .filter { !it.isTransient && !it.isStatic && !it.isDelegate }
+    .map {
+      it.isAccessible = true
+      it.aliasOrName to it
+    }
+    .toMap<String, Field>()
+
+val Any?.serializableFields: Map<String, Field>
+  get() =
+    this?.javaClass?.serializableFields
+      ?: mapOf()
 
 val Field.isPublic
   get() = Modifier.isPublic(modifiers)
@@ -168,6 +170,9 @@ val Field.isAbstract
 
 val Field.isStrict
   get() = Modifier.isStrict(modifiers)
+
+val Field.isDelegate
+  get() = name.endsWith("\$delegate")
 
 val Field.parameterUpperBound
   get() = when {

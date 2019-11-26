@@ -105,7 +105,7 @@ class RealWorldTest {
 
     // @formatter:off
     val QUERY = "query { " +
-      "get_flights( " +
+      "get_flights(" +
         "parameters: { " +
           "dateFrom: \"$DATE_FROM\", " +
           "dateTo: \"$DATE_TO\", " +
@@ -117,7 +117,7 @@ class RealWorldTest {
           "limit: $LIMIT, " +
           "offset: $OFFSET " +
         "}, " +
-        "providers: [ $PROVIDER ] " +
+        "providers: [ $PROVIDER ]" +
       ") { " +
         "data { " +
           "id, " +
@@ -159,14 +159,22 @@ class RealWorldTest {
           .finish()
         .objectField("data")
           .field("id")
+            .finish()
           .field("booking_token", "bookingToken")
+            .finish()
           .field("flyFrom")
+            .finish()
           .field("flyTo")
+            .finish()
           .field("cityFrom")
+            .finish()
           .field("cityTo")
+            .finish()
           .finish()
         .field("currency")
+           .finish()
         .field("more_pending", "morePending")
+           .finish()
         .finish()
       .finish()
       .build()

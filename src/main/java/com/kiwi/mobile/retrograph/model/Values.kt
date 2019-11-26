@@ -52,9 +52,7 @@ class Values<TParent>(
   // TODO: Not duplicate this algorithm in Arguments.
   fun valuesOf(instance: Any?) =
     apply {
-      instance.fields
-        .filter { !it.value.isTransient && !it.value.isStatic }
-        .filter { !it.value.name.endsWith("\$delegate") }
+      instance.serializableFields
         .forEach { valuesOf(instance, it.toPair()) }
     }
 

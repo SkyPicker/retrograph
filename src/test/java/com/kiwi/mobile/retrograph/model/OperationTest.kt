@@ -13,6 +13,7 @@ class OperationTest {
 
   // region Private Types
 
+  @Suppress("unused")
   enum class Enum {
     A, B
   }
@@ -55,30 +56,6 @@ class OperationTest {
     val intArray: Array<Int>,
     val enumArray: Array<Enum>,
     val objectArray: Array<Foo>
-    //val genericObject: Generic<T>,
-    //val templateArgumentObject: T
-  )
-
-  @Suppress("unused")
-  class TestArguments(
-    val int: Int = 99,
-    val long: Long = 999999L,
-    val float: Float = 99.99f,
-    val double: Double = 999.99,
-    val boolean: Boolean = true,
-    val string: String = "test",
-    val enum: Enum = Enum.B,
-    val `null`: Any? = null,
-    val emptyObject: Any = Any(),
-    val `object`: Foo = Foo(),
-    val emptyList: List<Int> = listOf(),
-    val intList: List<Int> = listOf(1, 2, 3),
-    val enumList: List<Enum> = listOf(Enum.A, Enum.B),
-    val objectList: List<Foo> = listOf(Foo()),
-    val emptyArray: Array<Int> = arrayOf(),
-    val intArray: Array<Int> = arrayOf(1, 2, 3),
-    val enumArray: Array<Enum> = arrayOf(Enum.A, Enum.B),
-    val objectArray: Array<Foo> = arrayOf(Foo())
   )
 
   @Suppress("unused")
@@ -86,7 +63,13 @@ class OperationTest {
     val name: String = "test"
   )
 
+  @Suppress("unused")
   class Bar
+
+  @Suppress("unused")
+  class FieldArguments(
+    val argument: String = "test"
+  )
 
   @Suppress("unused")
   class Generic<T>(
@@ -105,9 +88,14 @@ class OperationTest {
   )
 
   @Suppress("unused")
-  class ObjectFields(
-    val `object`: Object,
-    val genericObject: GenericObject<Foo>
+  class PrimitiveFieldsArguments<T>(
+    val int: FieldArguments = FieldArguments(),
+    val long: FieldArguments = FieldArguments(),
+    val float: FieldArguments = FieldArguments(),
+    val double: FieldArguments = FieldArguments(),
+    val boolean: FieldArguments = FieldArguments(),
+    val string: FieldArguments = FieldArguments(),
+    val enum: FieldArguments = FieldArguments()
   )
 
   @Suppress("unused")
@@ -121,6 +109,59 @@ class OperationTest {
   )
 
   @Suppress("unused")
+  class CollectionFieldsArguments(
+    val intList: FieldArguments = FieldArguments(),
+    val enumList: FieldArguments = FieldArguments(),
+    val objectList: FieldArguments = FieldArguments(),
+    val intArray: FieldArguments = FieldArguments(),
+    val enumArray: FieldArguments = FieldArguments(),
+    val objectArray: FieldArguments = FieldArguments()
+  )
+
+  @Suppress("unused")
+  class ObjectFields(
+    val `object`: Object,
+    val genericObject: GenericObject<Foo>
+  )
+
+  @Suppress("unused")
+  class ObjectFieldsArguments(
+    val `object`: FieldArguments = FieldArguments(),
+    val genericObject: FieldArguments = FieldArguments()
+  )
+
+  @Suppress("unused")
+  class ParentObjectFieldsArguments(
+    val `object`: ObjectArguments = ObjectArguments(),
+    val genericObject: ObjectArguments = ObjectArguments()
+  )
+
+  @Suppress("unused")
+  class ObjectArguments(
+    val argument: String = "test",
+    val int: FieldArguments = FieldArguments(),
+    val long: FieldArguments = FieldArguments(),
+    val float: FieldArguments = FieldArguments(),
+    val double: FieldArguments = FieldArguments(),
+    val boolean: FieldArguments = FieldArguments(),
+    val string: FieldArguments = FieldArguments(),
+    val enum: FieldArguments = FieldArguments(),
+    val `object`: FooObjectArguments = FooObjectArguments(),
+    val intList: FieldArguments = FieldArguments(),
+    val enumList: FieldArguments = FieldArguments(),
+    val objectList: FooObjectArguments = FooObjectArguments(),
+    val intArray: FieldArguments = FieldArguments(),
+    val enumArray: FieldArguments = FieldArguments(),
+    val objectArray: FooObjectArguments = FooObjectArguments()
+  )
+
+  @Suppress("unused")
+  class FooObjectArguments(
+    val argument: String = "test",
+    val name: FieldArguments = FieldArguments()
+  )
+
+  @Suppress("unused")
   class InlineFragmentFields<T>(
 
     @field:InlineFragment
@@ -131,21 +172,6 @@ class OperationTest {
 
     @field:InlineFragment
     val objectArray: Array<Foo>
-  )
-
-  @Suppress("unused")
-  class ArgumentFields<T>(
-    val int: Int,
-    val long: Long,
-    val float: Float,
-    val double: Double,
-    val `object`: Object
-  )
-
-  @Suppress("unused")
-  class ArgumentFieldsArguments(
-    val int: TestArguments = TestArguments(),
-    val `object`: TestArguments = TestArguments()
   )
 
   // endregion Private Types
@@ -261,12 +287,15 @@ class OperationTest {
   fun whenHasInlineFragment_thenSerialized() {
     // given
 
+    // @formatter:off
     val operation = Operation(mockParent)
       .inlineFragment("Foo")
-      .objectField("b")
-      .field("c")
-      .finish()
-      .finish()
+        .objectField("b")
+          .field("c")
+            .finish()
+          .finish()
+        .finish()
+    // @formatter:on
 
     // when
 
@@ -306,6 +335,105 @@ class OperationTest {
           "boolean, " +
           "string, " +
           "enum " +
+        "}"
+        // @formatter:on
+      )
+  }
+
+  @Test
+  fun whenPrimitiveFieldsOfWithArguments_thenSerialized() {
+    // given
+
+    val operation = Operation(mockParent)
+      .fieldsOf<PrimitiveFields<Foo>>(PrimitiveFieldsArguments<Foo>())
+
+    // when
+
+    val serialized = operation.toString()
+
+    // then
+
+    assertThat(operation)
+      .isInstanceOf(Operation::class.java)
+    assertThat(serialized)
+      .isEqualTo(
+        // @formatter:off
+        "query { " +
+          "int(argument: \"test\"), " +
+          "long(argument: \"test\"), " +
+          "float(argument: \"test\"), " +
+          "double(argument: \"test\"), " +
+          "boolean(argument: \"test\"), " +
+          "string(argument: \"test\"), " +
+          "enum(argument: \"test\") " +
+        "}"
+        // @formatter:on
+      )
+  }
+
+  @Test
+  fun whenCollectionFieldsOf_thenSerialized() {
+    // given
+
+    val operation = Operation(mockParent)
+      .fieldsOf<CollectionFields<Foo>>()
+
+    // when
+
+    val serialized = operation.toString()
+
+    // then
+
+    assertThat(operation)
+      .isInstanceOf(Operation::class.java)
+    assertThat(serialized)
+      .isEqualTo(
+        // @formatter:off
+        "query { " +
+          "intList, " +
+          "enumList, " +
+          "objectList { " +
+            "name " +
+          "}, " +
+          "intArray, " +
+          "enumArray, " +
+          "objectArray { " +
+            "name " +
+          "} " +
+        "}"
+        // @formatter:on
+      )
+  }
+
+  @Test
+  fun whenCollectionFieldsOfWithArguments_thenSerialized() {
+    // given
+
+    val operation = Operation(mockParent)
+      .fieldsOf<CollectionFields<Foo>>(CollectionFieldsArguments())
+
+    // when
+
+    val serialized = operation.toString()
+
+    // then
+
+    assertThat(operation)
+      .isInstanceOf(Operation::class.java)
+    assertThat(serialized)
+      .isEqualTo(
+        // @formatter:off
+        "query { " +
+          "intList(argument: \"test\"), " +
+          "enumList(argument: \"test\"), " +
+          "objectList(argument: \"test\") { " +
+            "name " +
+          "}, " +
+          "intArray(argument: \"test\"), " +
+          "enumArray(argument: \"test\"), " +
+          "objectArray(argument: \"test\") { " +
+            "name " +
+          "} " +
         "}"
         // @formatter:on
       )
@@ -373,14 +501,6 @@ class OperationTest {
             "objectArray { " +
               "name " +
             "} " +
-            /*"genericObject { " +
-              "value {" +
-                "name " +
-              "} " +
-            "}, " +
-            "templateArgumentObject {" +
-              "name " +
-            "} " +*/
           "} " +
         "}"
         // @formatter:on
@@ -388,11 +508,11 @@ class OperationTest {
   }
 
   @Test
-  fun whenCollectionFieldsOf_thenSerialized() {
+  fun whenObjectFieldsOfWithArguments_thenSerialized() {
     // given
 
     val operation = Operation(mockParent)
-      .fieldsOf<CollectionFields<Foo>>()
+      .fieldsOf<ObjectFields>(ObjectFieldsArguments())
 
     // when
 
@@ -406,15 +526,117 @@ class OperationTest {
       .isEqualTo(
         // @formatter:off
         "query { " +
-          "intList, " +
-          "enumList, " +
-          "objectList { " +
-            "name " +
+          "object(argument: \"test\") { " +
+            "int, " +
+            "long, " +
+            "float, " +
+            "double, " +
+            "boolean, " +
+            "string, " +
+            "enum, " +
+            "object { " +
+              "name " +
+            "}, " +
+            "intList, " +
+            "enumList, " +
+            "objectList { " +
+              "name " +
+            "}, " +
+            "intArray, " +
+            "enumArray, " +
+            "objectArray { " +
+              "name " +
+            "} "          +
           "}, " +
-          "intArray, " +
-          "enumArray, " +
-          "objectArray { " +
-            "name " +
+          "genericObject(argument: \"test\") { " +
+            "int, " +
+            "long, " +
+            "float, " +
+            "double, " +
+            "boolean, " +
+            "string, " +
+            "enum, " +
+            "object { " +
+              "name " +
+            "}, " +
+            "intList, " +
+            "enumList, " +
+            "objectList { " +
+              "name " +
+            "}, " +
+            "intArray, " +
+            "enumArray, " +
+            "objectArray { " +
+              "name " +
+            "} " +
+          "} " +
+        "}"
+        // @formatter:on
+      )
+  }
+
+  @Test
+  fun whenObjectFieldsOfWithChildArguments_thenSerialized() {
+    // given
+
+    val operation = Operation(mockParent)
+      .fieldsOf<ObjectFields>(ParentObjectFieldsArguments())
+
+    // when
+
+    val serialized = operation.toString()
+
+    // then
+
+    assertThat(operation)
+      .isInstanceOf(Operation::class.java)
+    assertThat(serialized)
+      .isEqualTo(
+        // @formatter:off
+        "query { " +
+          "object(argument: \"test\") { " +
+            "int(argument: \"test\"), " +
+            "long(argument: \"test\"), " +
+            "float(argument: \"test\"), " +
+            "double(argument: \"test\"), " +
+            "boolean(argument: \"test\"), " +
+            "string(argument: \"test\"), " +
+            "enum(argument: \"test\"), " +
+            "object(argument: \"test\") { " +
+              "name(argument: \"test\") " +
+            "}, " +
+            "intList(argument: \"test\"), " +
+            "enumList(argument: \"test\"), " +
+            "objectList(argument: \"test\") { " +
+              "name(argument: \"test\") " +
+            "}, " +
+            "intArray(argument: \"test\"), " +
+            "enumArray(argument: \"test\"), " +
+            "objectArray(argument: \"test\") { " +
+              "name(argument: \"test\") " +
+            "} "          +
+          "}, " +
+          "genericObject(argument: \"test\") { " +
+            "int(argument: \"test\"), " +
+            "long(argument: \"test\"), " +
+            "float(argument: \"test\"), " +
+            "double(argument: \"test\"), " +
+            "boolean(argument: \"test\"), " +
+            "string(argument: \"test\"), " +
+            "enum(argument: \"test\"), " +
+            "object(argument: \"test\") { " +
+              "name(argument: \"test\") " +
+            "}, " +
+            "intList(argument: \"test\"), " +
+            "enumList(argument: \"test\"), " +
+            "objectList(argument: \"test\") { " +
+              "name(argument: \"test\") " +
+            "}, " +
+            "intArray(argument: \"test\"), " +
+            "enumArray(argument: \"test\"), " +
+            "objectArray(argument: \"test\") { " +
+              "name(argument: \"test\") " +
+            "} " +
           "} " +
         "}"
         // @formatter:on
@@ -452,116 +674,6 @@ class OperationTest {
           "}, " +
           "objectArray { " +
             "... on Foo { " +
-              "name " +
-            "} " +
-          "} " +
-        "}"
-        // @formatter:on
-      )
-  }
-
-  @Test
-  fun whenArgumentFieldsOf_thenSerialized() {
-    // given
-
-    val operation = Operation(mockParent)
-      .fieldsOf<ArgumentFields<Foo>>(ArgumentFieldsArguments())
-
-    // when
-
-    val serialized = operation.toString()
-
-    // then
-
-    assertThat(operation)
-      .isInstanceOf(Operation::class.java)
-    assertThat(serialized)
-      .isEqualTo(
-        // @formatter:off
-        "query { " +
-          "int( " +
-            "int: 99, " +
-            "long: 999999, " +
-            "float: 99.99, " +
-            "double: 999.99, " +
-            "boolean: true, " +
-            "string: \"test\", " +
-            "enum: B, " +
-            "null: null, " +
-            "emptyObject: {  " +
-            "}, " +
-            "object: { " +
-              "name: \"test\" " +
-            "}, " +
-            "emptyList: [  ], " +
-            "intList: [ 1, 2, 3 ], " +
-            "enumList: [ A, B ], " +
-            "objectList: [ " +
-              "{ " +
-                "name: \"test\" " +
-              "} " +
-            "], " +
-            "emptyArray: [  ], " +
-            "intArray: [ 1, 2, 3 ], " +
-            "enumArray: [ A, B ], " +
-            "objectArray: [ " +
-              "{ " +
-                "name: \"test\" " +
-              "} " +
-            "] " +
-          "), " +
-          "long, " +
-          "float, " +
-          "double, " +
-          "object( " +
-            "int: 99, " +
-            "long: 999999, " +
-            "float: 99.99, " +
-            "double: 999.99, " +
-            "boolean: true, " +
-            "string: \"test\", " +
-            "enum: B, " +
-            "null: null, " +
-            "emptyObject: {  " +
-            "}, " +
-            "object: { " +
-              "name: \"test\" " +
-            "}, " +
-            "emptyList: [  ], " +
-            "intList: [ 1, 2, 3 ], " +
-            "enumList: [ A, B ], " +
-            "objectList: [ " +
-              "{ " +
-                "name: \"test\" " +
-              "} " +
-            "], " +
-            "emptyArray: [  ], " +
-            "intArray: [ 1, 2, 3 ], " +
-            "enumArray: [ A, B ], " +
-            "objectArray: [ " +
-              "{ " +
-                "name: \"test\" " +
-              "} " +
-            "] " +
-          ") { " +
-            "int, " +
-            "long, " +
-            "float, " +
-            "double, " +
-            "boolean, " +
-            "string, " +
-            "enum, " +
-            "object { " +
-              "name " +
-            "}, " +
-            "intList, " +
-            "enumList, " +
-            "objectList { " +
-              "name " +
-            "}, " +
-            "intArray, " +
-            "enumArray, " +
-            "objectArray { " +
               "name " +
             "} " +
           "} " +
