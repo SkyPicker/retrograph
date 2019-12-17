@@ -174,6 +174,22 @@ class OperationTest {
     val objectArray: Array<Foo>
   )
 
+  @Suppress("unused")
+  class SameAliasFields(
+
+    @field:Alias("test")
+    val firstField: String,
+
+    @field:Alias("test")
+    val secondField: String
+  )
+
+  @Suppress("unused")
+  class SameAliasFieldsArguments(
+    val firstField: FieldArguments = FieldArguments("first"),
+    val secondField: FieldArguments = FieldArguments("second")
+  )
+
   // endregion Private Types
 
   // region Private Properties
@@ -702,6 +718,52 @@ class OperationTest {
       .isInstanceOf(Operation::class.java)
     assertThat(serialized)
       .isEqualTo("query { aa: a, bb: b, c }")
+  }
+
+  @Test
+  fun whenTwoFieldsHaveSameAlias_thenSerialized() {
+    // given
+
+    val operation = Operation(mockParent)
+      .field("a", "aa")
+      .field("a", "aaa")
+
+    // when
+
+    val serialized = operation.toString()
+
+    // then
+
+    assertThat(operation)
+      .isInstanceOf(Operation::class.java)
+    assertThat(serialized)
+      .isEqualTo("query { aa: a, aaa: a }")
+  }
+
+  @Test
+  fun whenTwoFieldsHaveSameAliasFieldsOf_thenSerialized() {
+    // given
+
+    val operation = Operation(mockParent)
+      .fieldsOf<SameAliasFields>(SameAliasFieldsArguments())
+
+    // when
+
+    val serialized = operation.toString()
+
+    // then
+
+    assertThat(operation)
+      .isInstanceOf(Operation::class.java)
+    assertThat(serialized)
+      .isEqualTo(
+        // @formatter:off
+        "query { " +
+          "firstField: test(argument: \"first\"), " +
+          "secondField: test(argument: \"second\") " +
+        "}"
+        // @formatter:on
+      )
   }
 
   @Test

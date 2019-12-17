@@ -1,5 +1,5 @@
 ext {
-  retrographVersion = "0.7-SNAPSHOT"
+  retrographVersion = "0.8-SNAPSHOT"
 
   if (!hasProperty("gradlePluginVersion")) ext.gradlePluginVersion = "3.5.0"
   if (!hasProperty("bintrayPluginVersion")) ext.bintrayPluginVersion = "1.8.4"

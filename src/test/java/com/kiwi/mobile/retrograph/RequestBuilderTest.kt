@@ -1,5 +1,6 @@
 package com.kiwi.mobile.retrograph
 
+import com.kiwi.mobile.retrograph.annotation.*
 import com.kiwi.mobile.retrograph.model.*
 
 import org.assertj.core.api.Assertions.*
@@ -15,7 +16,10 @@ class RequestBuilderTest {
   }
 
   private data class Response(
+    @field: Alias("alias")
     val firstFoo: FirstLevel,
+
+    @field: Alias("alias")
     val firstBar: FirstLevel
   ) {
 
@@ -240,12 +244,12 @@ class RequestBuilderTest {
       .isEqualTo(
         // @formatter:off
         "query { " +
-          "firstFoo(firstArgument: \"first foo\") { " +
+          "firstFoo: alias(firstArgument: \"first foo\") { " +
             "second(secondArgument: \"second foo\") { " +
               "field(fieldArgument: \"field foo\") " +
             "} " +
           "}, " +
-          "firstBar(firstArgument: \"first bar\") { " +
+          "firstBar: alias(firstArgument: \"first bar\") { " +
             "second(secondArgument: \"second bar\") { " +
               "field(fieldArgument: \"field bar\") " +
             "} " +

@@ -126,7 +126,7 @@ val <T: Any> Class<T>.serializableFields: Map<String, Field>
     .filter { !it.isTransient && !it.isStatic && !it.isDelegate }
     .map {
       it.isAccessible = true
-      it.aliasOrName to it
+      it.name to it
     }
     .toMap<String, Field>()
 
