@@ -49,6 +49,7 @@ dependencies {
   testImplementation("io.mockk:mockk:$mockkVersion")
   testImplementation("org.assertj:assertj-core:3.10.0")
   testImplementation("com.google.guava:guava:22.0")
+  testImplementation("joda-time:joda-time:2.10.5")
 }
 
 // Test tasks are never up-to-date.

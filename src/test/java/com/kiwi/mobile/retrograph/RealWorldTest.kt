@@ -15,14 +15,14 @@ import okhttp3.logging.*
 
 import org.assertj.core.api.Assertions.*
 
+import org.joda.time.*
+import org.joda.time.format.*
+
 import org.junit.*
 
 import retrofit2.*
 import retrofit2.converter.gson.*
 import retrofit2.http.*
-
-import java.text.*
-import java.util.*
 
 import java.util.concurrent.*
 
@@ -86,17 +86,15 @@ class RealWorldTest {
 
   private companion object {
 
-    val DATE_FROM = SimpleDateFormat("dd/MM/YYYY")
-      .format(
-        Date()
-          .apply { date += 10 }
-      )
+    val DATE_TIME_FORMAT = DateTimeFormat.forPattern("dd/MM/YYYY")
 
-    val DATE_TO = SimpleDateFormat("dd/MM/YYYY")
-      .format(
-        Date()
-          .apply { date += 20 }
-      )
+    val DATE_FROM = DateTime()
+      .plusDays(10)
+      .toString(DATE_TIME_FORMAT)
+
+    val DATE_TO = DateTime()
+      .plusDays(20)
+      .toString(DATE_TIME_FORMAT)
 
     const val FLY_FROM = "london_gb"
     const val LIMIT = 20
